@@ -16,26 +16,27 @@ We are building an autonomous security agent for TBO travel APIs:
 
 TEAM ROLES
 
-1. S4NTY3119 (Backend & AI Lead)
+1. @S4NTY3119 (Backend & AI Lead)
 - Build the LLM attack planner: give endpoints to the LLM to figure out smart business logic exploits.
 - Build the exploit runner: safely fire the attack payloads with rate limiting.
 - Build the verifier: confirm if the exploit succeeded and score the severity.
+- Core REST APIs for the agent engine.
 
-2. dharanii-07 (Backend & Recon)
+2. @dharanii-07 (Backend & Recon)
 - Build the traffic sniffer / log parser to extract all API routes and parameters.
 - Build the zombie and shadow API detection logic.
 - Set up the SQLite database to store endpoints, findings, and logs, plus basic REST APIs for the UI.
 
-3. arun-hitesh (Frontend - Command Center)
+3. @arun-hitesh (Frontend - Command Center)
 - Main dashboard screen: total endpoints scanned, zombie count, critical bugs.
 - Live attack feed: real-time stream showing what the agent is scanning and attacking.
 - Safety controls: emergency pause button (kill switch).
 
-4. Frontend Teammate 2 (Frontend - Visuals & Proofs)
+4. @myth371 (Frontend - Visuals & Proofs)
 - Visual API map: clean interactive tree showing all endpoints (active, zombie, shadow).
 - Vulnerability modal: clicking a bug shows the exact HTTP request, response proof, and a Retest button.
 
-5. Teammate 5 (Mock Data & Pitch)
+5. Ghost Guy (Mock Data & Pitch)
 - Generate fake travel traffic and sample booking JSONs.
 - Prepare the demo script and slides for the judges.
 
