@@ -1,9 +1,11 @@
 from fastapi import FastAPI, BackgroundTasks
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
 import threading
 import time
+import os
 
 from db.database import init_db, save_endpoint, save_finding, get_all_findings, get_all_endpoints, get_recent_logs, log_activity
 from agents.planner import AttackPlanner
@@ -83,9 +85,13 @@ def run_dast_scan_workflow():
     log_activity("Orchestrator", "SCAN_COMPLETE", f"Scan finished. Endpoints: {scanned_count}, Vulnerabilities: {found_count}")
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return {"name": "RouteZero Security DAST API", "status": "online"}
+    html_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html"))
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>RouteZero Security DAST API Online</h1>"
 
 @app.get("/api/status")
 def get_status():
