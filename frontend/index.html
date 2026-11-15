@@ -28,6 +28,7 @@
         <div class="flex items-center gap-2">
           <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">RouteZero</span>
           <span class="text-xs px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 font-medium">Real-Time DAST</span>
+          <span id="modeBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">LIVE API</span>
         </div>
         <p class="text-xs text-slate-400">Autonomous Security Agent for TBO B2B Travel APIs</p>
       </div>
@@ -49,9 +50,9 @@
       </button>
 
       <!-- Export OpenAPI -->
-      <a href="/api/export/openapi.json" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition">
+      <button onclick="downloadOpenApi()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition">
         <i class="fa-solid fa-file-code"></i> Export OpenAPI
-      </a>
+      </button>
 
       <!-- Scan Trigger Button -->
       <button id="scanBtn" onclick="triggerScan()" class="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 transition">
@@ -231,39 +232,141 @@
 
   <script>
     const API_BASE = "http://127.0.0.1:8000/api";
+    let isLiveBackend = false;
     let currentFindingId = null;
 
-    async function fetchData() {
+    // Static Demo Dataset for GitHub Pages viewer
+    const DEMO_ENDPOINTS = [
+      { id: 1, path: "/api/v2/flights/search", method: "GET", category: "active", params: { origin: "DEL", destination: "DXB" } },
+      { id: 2, path: "/api/v2/bookings/create", method: "POST", category: "active", params: { agency_id: "str", price: "float" } },
+      { id: 3, path: "/api/v2/bookings/{booking_id}", method: "GET", category: "active", params: { booking_id: "str" } },
+      { id: 4, path: "/api/v2/refunds/request", method: "POST", category: "active", params: { booking_id: "str", amount: "float" } },
+      { id: 5, path: "/api/v1/legacy/discounts", method: "GET", category: "zombie", params: {} },
+      { id: 6, path: "/api/v2/internal/admin/stats", method: "GET", category: "shadow", params: {} }
+    ];
+
+    const DEMO_FINDINGS = [
+      {
+        id: 1,
+        title: "Business Logic: Unchecked Booking Price Tampering",
+        severity: "CRITICAL",
+        vuln_type: "BUSINESS_LOGIC_TAMPERING",
+        endpoint: "/api/v2/bookings/create",
+        method: "POST",
+        description: "The endpoint accepts client-supplied pricing without server-side validation. An attacker can set flight/hotel booking prices to $1.00.",
+        business_impact: "Direct financial revenue loss and fraudulent ticket issuance across TBO inventory.",
+        reproduction_curl: "curl -X POST 'http://127.0.0.1:8001/api/v2/bookings/create' -H 'Content-Type: application/json' -d '{\"agency_id\": \"AGENCY-001\", \"flight_number\": \"AI-202\", \"passenger_name\": \"Attacker Test\", \"passport_no\": \"X0000000\", \"price\": 1.0}'",
+        proof_request: "{\n  \"agency_id\": \"AGENCY-001\",\n  \"flight_number\": \"AI-202\",\n  \"passenger_name\": \"Attacker Test\",\n  \"passport_no\": \"X0000000\",\n  \"price\": 1.0\n}",
+        proof_response: "{\n  \"status\": \"success\",\n  \"message\": \"Booking created\",\n  \"booking\": {\n    \"booking_id\": \"BK-1003\",\n    \"agency_id\": \"AGENCY-001\",\n    \"passenger_name\": \"Attacker Test\",\n    \"passport_no\": \"X0000000\",\n    \"flight\": \"AI-202\",\n    \"price\": 1.0,\n    \"status\": \"CONFIRMED\"\n  }\n}"
+      },
+      {
+        id: 2,
+        title: "Broken Object Level Authorization (IDOR) with PII Leak",
+        severity: "CRITICAL",
+        vuln_type: "ACCESS_CONTROL_IDOR",
+        endpoint: "/api/v2/bookings/BK-1001",
+        method: "GET",
+        description: "Booking records are accessible across agency boundaries without tenancy verification. Passenger passport numbers and travel details are leaked.",
+        business_impact: "Severe breach of India DPDP Act and international privacy laws. Agency customer data exposed to competing travel agents.",
+        reproduction_curl: "curl -X GET 'http://127.0.0.1:8001/api/v2/bookings/BK-1001' -H 'X-Agency-Id: AGENCY-002'",
+        proof_request: "Headers: {\"X-Agency-Id\": \"AGENCY-002\"}",
+        proof_response: "{\n  \"status\": \"success\",\n  \"booking\": {\n    \"booking_id\": \"BK-1001\",\n    \"agency_id\": \"AGENCY-001\",\n    \"passenger_name\": \"John Doe\",\n    \"passport_no\": \"Z8912345\",\n    \"flight\": \"AI-202 (DEL -> LHR)\",\n    \"price\": 1200,\n    \"status\": \"CONFIRMED\"\n  }\n}"
+      },
+      {
+        id: 3,
+        title: "Zombie Endpoint: Deprecated API Leaking Internal Discount Codes",
+        severity: "HIGH",
+        vuln_type: "ZOMBIE_API",
+        endpoint: "/api/v1/legacy/discounts",
+        method: "GET",
+        description: "Deprecated /v1 route is still alive in production staging and serves confidential 50% discount codes without authentication.",
+        business_impact: "Unauthorized margin loss and exposure of forgotten legacy routes to external threat actors.",
+        reproduction_curl: "curl -X GET 'http://127.0.0.1:8001/api/v1/legacy/discounts'",
+        proof_request: "GET /api/v1/legacy/discounts",
+        proof_response: "{\n  \"warning\": \"DEPRECATED ENDPOINT\",\n  \"promo_code\": \"SECRET_STAFF_50_OFF\",\n  \"discount_percent\": 50,\n  \"expires\": \"2021-12-31\"\n}"
+      },
+      {
+        id: 4,
+        title: "Shadow Endpoint: Internal System Metrics & DB Connection String Exposed",
+        severity: "HIGH",
+        vuln_type: "SHADOW_API",
+        endpoint: "/api/v2/internal/admin/stats",
+        method: "GET",
+        description: "Undocumented /internal endpoint is publicly reachable and leaks database connection details and internal telemetry.",
+        business_impact: "Internal architecture reconnaissance aid for attackers, facilitating lateral movement and database targeting.",
+        reproduction_curl: "curl -X GET 'http://127.0.0.1:8001/api/v2/internal/admin/stats'",
+        proof_request: "GET /api/v2/internal/admin/stats",
+        proof_response: "{\n  \"service\": \"tbo-booking-engine\",\n  \"environment\": \"production-like-staging\",\n  \"active_agencies\": 2,\n  \"total_revenue\": 2050,\n  \"db_connection\": \"sqlite:///tbo_travel.db\"\n}"
+      },
+      {
+        id: 5,
+        title: "Business Logic: Double Refund Without State Verification",
+        severity: "HIGH",
+        vuln_type: "BUSINESS_LOGIC_REFUND",
+        endpoint: "/api/v2/refunds/request",
+        method: "POST",
+        description: "Refund requests are processed repeatedly without checking whether the booking is already cancelled/refunded.",
+        business_impact: "Fraudulent depletion of supplier/agency refund pools.",
+        reproduction_curl: "curl -X POST 'http://127.0.0.1:8001/api/v2/refunds/request' -H 'Content-Type: application/json' -d '{\"booking_id\": \"BK-1002\", \"amount\": 850.0}'",
+        proof_request: "{\n  \"booking_id\": \"BK-1002\",\n  \"amount\": 850.0\n}",
+        proof_response: "{\n  \"status\": \"success\",\n  \"refund_id\": \"RF-9988\",\n  \"amount_refunded\": 850.0,\n  \"booking_status\": \"REFUNDED\"\n}"
+      }
+    ];
+
+    let allFindingsCache = [];
+
+    async function checkBackend() {
       try {
-        const [statusRes, epRes, findingsRes, logsRes] = await Promise.all([
-          fetch(`${API_BASE}/status`),
-          fetch(`${API_BASE}/endpoints`),
-          fetch(`${API_BASE}/findings`),
-          fetch(`${API_BASE}/logs`)
-        ]);
-
-        const status = await statusRes.json();
-        const epData = await epRes.json();
-        const findingsData = await findingsRes.json();
-        const logsData = await logsRes.json();
-
-        updateStats(epData.endpoints || [], findingsData.findings || []);
-        renderEndpoints(epData.endpoints || []);
-        renderFindings(findingsData.findings || []);
-        renderLogs(logsData.logs || []);
-
-        if (status.is_running) {
-          document.getElementById('scanBtn').disabled = true;
-          document.getElementById('scanText').innerText = "Scanning in Progress...";
-          document.getElementById('scanIcon').className = "fa-solid fa-spinner fa-spin";
-        } else {
-          document.getElementById('scanBtn').disabled = false;
-          document.getElementById('scanText').innerText = "Launch Agent Scan";
-          document.getElementById('scanIcon').className = "fa-solid fa-bolt";
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1200);
+        const res = await fetch(`${API_BASE}/status`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          isLiveBackend = true;
+          document.getElementById('modeBadge').innerText = "LIVE BACKEND";
+          document.getElementById('modeBadge').className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono";
+          return true;
         }
+      } catch (e) {
+        isLiveBackend = false;
+        document.getElementById('modeBadge').innerText = "INTERACTIVE DEMO";
+        document.getElementById('modeBadge').className = "text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono";
+      }
+      return false;
+    }
 
-      } catch (err) {
-        console.warn("Backend not reached yet:", err.message);
+    async function fetchData() {
+      if (isLiveBackend) {
+        try {
+          const [statusRes, epRes, findingsRes, logsRes] = await Promise.all([
+            fetch(`${API_BASE}/status`),
+            fetch(`${API_BASE}/endpoints`),
+            fetch(`${API_BASE}/findings`),
+            fetch(`${API_BASE}/logs`)
+          ]);
+
+          const status = await statusRes.json();
+          const epData = await epRes.json();
+          const findingsData = await findingsRes.json();
+          const logsData = await logsRes.json();
+
+          updateStats(epData.endpoints || [], findingsData.findings || []);
+          renderEndpoints(epData.endpoints || []);
+          renderFindings(findingsData.findings || []);
+          renderLogs(logsData.logs || []);
+
+          if (status.is_running) {
+            document.getElementById('scanBtn').disabled = true;
+            document.getElementById('scanText').innerText = "Scanning in Progress...";
+            document.getElementById('scanIcon').className = "fa-solid fa-spinner fa-spin";
+          } else {
+            document.getElementById('scanBtn').disabled = false;
+            document.getElementById('scanText').innerText = "Launch Agent Scan";
+            document.getElementById('scanIcon').className = "fa-solid fa-bolt";
+          }
+        } catch (err) {
+          console.warn("Backend error, falling to demo:", err);
+        }
       }
     }
 
@@ -308,7 +411,6 @@
       }).join('');
     }
 
-    let allFindingsCache = [];
     function renderFindings(findings) {
       allFindingsCache = findings;
       const container = document.getElementById('findingsContainer');
@@ -351,11 +453,57 @@
     }
 
     async function triggerScan() {
-      try {
-        await fetch(`${API_BASE}/scan/start`, { method: 'POST' });
-        fetchData();
-      } catch (e) {
-        alert("Failed to start scan: " + e.message);
+      const scanBtn = document.getElementById('scanBtn');
+      const scanText = document.getElementById('scanText');
+      const scanIcon = document.getElementById('scanIcon');
+
+      scanBtn.disabled = true;
+      scanText.innerText = "Scanning in Progress...";
+      scanIcon.className = "fa-solid fa-spinner fa-spin";
+
+      if (isLiveBackend) {
+        try {
+          await fetch(`${API_BASE}/scan/start`, { method: 'POST' });
+          fetchData();
+        } catch (e) {
+          alert("Failed to start scan: " + e.message);
+        }
+      } else {
+        // Run simulated scan for GitHub Pages viewer
+        const terminal = document.getElementById('terminalLogs');
+        const simulatedLogs = [
+          { agent: "Orchestrator", action: "SCAN_START", details: "Targeting platform at http://127.0.0.1:8001" },
+          { agent: "ReconAgent", action: "ENDPOINT_MAPPED", details: "GET /api/v2/flights/search [ACTIVE]" },
+          { agent: "ReconAgent", action: "ENDPOINT_MAPPED", details: "POST /api/v2/bookings/create [ACTIVE]" },
+          { agent: "AttackPlanner", action: "PLAN_GENERATED", details: "Attack: Zero/Manipulated Fare Exploit" },
+          { agent: "VerifierAgent", action: "VULNERABILITY_CONFIRMED", details: "[CRITICAL] Booking Price Tampering" },
+          { agent: "ReconAgent", action: "ENDPOINT_MAPPED", details: "GET /api/v1/legacy/discounts [ZOMBIE]" },
+          { agent: "VerifierAgent", action: "VULNERABILITY_CONFIRMED", details: "[HIGH] Deprecated Promo Leak" },
+          { agent: "ReconAgent", action: "ENDPOINT_MAPPED", details: "GET /api/v2/internal/admin/stats [SHADOW]" },
+          { agent: "VerifierAgent", action: "VULNERABILITY_CONFIRMED", details: "[HIGH] Internal Telemetry Leak" },
+          { agent: "Orchestrator", action: "SCAN_COMPLETE", details: "Scan finished. Endpoints: 6, Vulnerabilities: 5" }
+        ];
+
+        let index = 0;
+        terminal.innerHTML = "";
+        const interval = setInterval(() => {
+          if (index < simulatedLogs.length) {
+            const l = simulatedLogs[index];
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="text-slate-500">[${l.agent}]</span> <span class="text-rose-400">${l.action}</span>: <span class="text-slate-300">${l.details}</span>`;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+            index++;
+          } else {
+            clearInterval(interval);
+            updateStats(DEMO_ENDPOINTS, DEMO_FINDINGS);
+            renderEndpoints(DEMO_ENDPOINTS);
+            renderFindings(DEMO_FINDINGS);
+            scanBtn.disabled = false;
+            scanText.innerText = "Launch Agent Scan";
+            scanIcon.className = "fa-solid fa-bolt";
+          }
+        }, 300);
       }
     }
 
@@ -389,12 +537,14 @@
     }
 
     async function triggerRetest() {
-      if (!currentFindingId) return;
       const btn = document.getElementById('modalRetestBtn');
       btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Retesting Exploit...`;
       btn.disabled = true;
 
-      await fetch(`${API_BASE}/retest/${currentFindingId}`, { method: 'POST' });
+      if (isLiveBackend && currentFindingId) {
+        await fetch(`${API_BASE}/retest/${currentFindingId}`, { method: 'POST' });
+      }
+
       setTimeout(() => {
         btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> Confirmed Still Exploitable`;
         setTimeout(() => {
@@ -406,25 +556,70 @@
 
     async function toggleKillSwitch() {
       const btn = document.getElementById('killSwitchBtn');
-      try {
-        const res = await fetch(`${API_BASE}/safety/kill-switch`, { method: 'POST' });
-        const data = await res.json();
-        if (data.kill_switch_active) {
-          btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition";
-          btn.innerHTML = `<i class="fa-solid fa-ban"></i> Kill Switch: PAUSED`;
-        } else {
-          btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition";
-          btn.innerHTML = `<i class="fa-solid fa-power-off"></i> Safe Mode: ACTIVE`;
-        }
-        fetchData();
-      } catch (err) {
-        console.error("Failed to toggle kill switch:", err);
+      if (isLiveBackend) {
+        try {
+          const res = await fetch(`${API_BASE}/safety/kill-switch`, { method: 'POST' });
+          const data = await res.json();
+          if (data.kill_switch_active) {
+            btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition";
+            btn.innerHTML = `<i class="fa-solid fa-ban"></i> Kill Switch: PAUSED`;
+          } else {
+            btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition";
+            btn.innerHTML = `<i class="fa-solid fa-power-off"></i> Safe Mode: ACTIVE`;
+          }
+          fetchData();
+          return;
+        } catch (err) {}
+      }
+
+      // Standalone toggle
+      if (btn.classList.contains('text-amber-300')) {
+        btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition";
+        btn.innerHTML = `<i class="fa-solid fa-ban"></i> Kill Switch: PAUSED`;
+      } else {
+        btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition";
+        btn.innerHTML = `<i class="fa-solid fa-power-off"></i> Safe Mode: ACTIVE`;
       }
     }
 
-    // Auto-poll every 2 seconds
-    fetchData();
-    setInterval(fetchData, 2000);
+    function downloadOpenApi() {
+      if (isLiveBackend) {
+        window.open('/api/export/openapi.json', '_blank');
+        return;
+      }
+      // Demo download for GitHub Pages
+      const sampleSpec = {
+        openapi: "3.0.0",
+        info: { title: "RouteZero Inferred API Catalog (TBO Travel Platform)", version: "1.0.0" },
+        paths: {
+          "/api/v2/flights/search": { get: { summary: "[ACTIVE] Inferred GET /api/v2/flights/search" } },
+          "/api/v2/bookings/create": { post: { summary: "[ACTIVE] Inferred POST /api/v2/bookings/create" } },
+          "/api/v2/bookings/{booking_id}": { get: { summary: "[ACTIVE] Inferred GET /api/v2/bookings/{booking_id}" } },
+          "/api/v1/legacy/discounts": { get: { summary: "[ZOMBIE] Inferred GET /api/v1/legacy/discounts" } },
+          "/api/v2/internal/admin/stats": { get: { summary: "[SHADOW] Inferred GET /api/v2/internal/admin/stats" } }
+        }
+      };
+      const blob = new Blob([JSON.stringify(sampleSpec, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "routezero_openapi_spec.json";
+      a.click();
+    }
+
+    // Initialize
+    (async () => {
+      await checkBackend();
+      if (isLiveBackend) {
+        fetchData();
+        setInterval(fetchData, 2000);
+      } else {
+        // Render initial demo state
+        updateStats(DEMO_ENDPOINTS, DEMO_FINDINGS);
+        renderEndpoints(DEMO_ENDPOINTS);
+        renderFindings(DEMO_FINDINGS);
+      }
+    })();
   </script>
 </body>
 </html>
