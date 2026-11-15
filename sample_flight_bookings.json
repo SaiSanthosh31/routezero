@@ -1,0 +1,129 @@
+{
+  "dataset": "RouteZero synthetic travel booking fixtures",
+  "notice": "All agencies, travelers, passport-like values, emails and booking references are fictional test data.",
+  "agencies": [
+    {
+      "agency_id": "agency_northstar",
+      "agency_name": "Northstar Travel",
+      "bookings": [
+        {
+          "booking_id": "NS-20481",
+          "customer_id": "cust_1007",
+          "traveler": {
+            "name": "Aarav Mehta",
+            "passport_number": "TSTN482901",
+            "email": "aarav.mehta@example.test"
+          },
+          "flight": {
+            "airline": "Indigo",
+            "flight_number": "6E-218",
+            "origin": "MAA",
+            "destination": "BLR",
+            "departure": "2026-12-03T08:10:00+05:30"
+          },
+          "price": {
+            "currency": "INR",
+            "amount": 6840
+          },
+          "status": "confirmed"
+        },
+        {
+          "booking_id": "NS-20482",
+          "customer_id": "cust_1008",
+          "traveler": {
+            "name": "Diya Raman",
+            "passport_number": "TSTN573820",
+            "email": "diya.raman@example.test"
+          },
+          "flight": {
+            "airline": "Air India",
+            "flight_number": "AI-571",
+            "origin": "MAA",
+            "destination": "DEL",
+            "departure": "2026-12-05T19:45:00+05:30"
+          },
+          "price": {
+            "currency": "INR",
+            "amount": 12450
+          },
+          "status": "ticketed"
+        }
+      ]
+    },
+    {
+      "agency_id": "agency_skyroute",
+      "agency_name": "SkyRoute Holidays",
+      "bookings": [
+        {
+          "booking_id": "SR-77103",
+          "customer_id": "cust_2041",
+          "traveler": {
+            "name": "Kabir Shah",
+            "passport_number": "TSTK193746",
+            "email": "kabir.shah@example.test"
+          },
+          "flight": {
+            "airline": "Vistara",
+            "flight_number": "UK-823",
+            "origin": "BLR",
+            "destination": "BOM",
+            "departure": "2026-12-07T06:30:00+05:30"
+          },
+          "price": {
+            "currency": "INR",
+            "amount": 9320
+          },
+          "status": "confirmed"
+        },
+        {
+          "booking_id": "SR-77104",
+          "customer_id": "cust_2042",
+          "traveler": {
+            "name": "Mira Iyer",
+            "passport_number": "TSTM628415",
+            "email": "mira.iyer@example.test"
+          },
+          "flight": {
+            "airline": "Indigo",
+            "flight_number": "6E-642",
+            "origin": "HYD",
+            "destination": "MAA",
+            "departure": "2026-12-09T21:15:00+05:30"
+          },
+          "price": {
+            "currency": "INR",
+            "amount": 5780
+          },
+          "status": "pending_payment"
+        }
+      ]
+    },
+    {
+      "agency_id": "agency_cloudwing",
+      "agency_name": "CloudWing Trips",
+      "bookings": [
+        {
+          "booking_id": "CW-55019",
+          "customer_id": "cust_3099",
+          "traveler": {
+            "name": "Ishaan Rao",
+            "passport_number": "TSTI840261",
+            "email": "ishaan.rao@example.test"
+          },
+          "flight": {
+            "airline": "Akasa Air",
+            "flight_number": "QP-1342",
+            "origin": "BOM",
+            "destination": "GOI",
+            "departure": "2026-12-11T12:20:00+05:30"
+          },
+          "price": {
+            "currency": "INR",
+            "amount": 7490
+          },
+          "status": "confirmed"
+        }
+      ]
+    }
+  ]
+}

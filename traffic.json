@@ -1,0 +1,170 @@
+{
+  "log_format": "RouteZero simplified HAR-like traffic fixture",
+  "version": "1.2",
+  "creator": {
+    "name": "RouteZero Demo Generator",
+    "version": "1.0"
+  },
+  "notice": "Synthetic normal traffic for the local mock portal only. Authorization values are dummy tokens.",
+  "base_url": "http://127.0.0.1:8001",
+  "entries": [
+    {
+      "startedDateTime": "2026-11-15T10:00:00+05:30",
+      "time": 42,
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8001/api/v1/flights/search?from=MAA&to=BLR&date=2026-12-03",
+        "headers": [
+          {
+            "name": "Accept",
+            "value": "application/json"
+          },
+          {
+            "name": "X-Agency-ID",
+            "value": "agency_northstar"
+          }
+        ],
+        "queryString": [
+          {
+            "name": "from",
+            "value": "MAA"
+          },
+          {
+            "name": "to",
+            "value": "BLR"
+          },
+          {
+            "name": "date",
+            "value": "2026-12-03"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "content": {
+          "mimeType": "application/json",
+          "text": "{\"results\":[{\"flight\":\"6E-218\",\"price\":6840,\"currency\":\"INR\"},{\"flight\":\"AI-571\",\"price\":7120,\"currency\":\"INR\"}]}"
+        },
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      }
+    },
+    {
+      "startedDateTime": "2026-11-15T10:00:04+05:30",
+      "time": 57,
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8001/api/v1/bookings",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "name": "Authorization",
+            "value": "Bearer demo-token-northstar"
+          },
+          {
+            "name": "X-Agency-ID",
+            "value": "agency_northstar"
+          }
+        ],
+        "postData": {
+          "mimeType": "application/json",
+          "text": "{\"flight_number\":\"6E-218\",\"traveler_id\":\"cust_1007\",\"agency_id\":\"agency_northstar\",\"quoted_price\":6840,\"currency\":\"INR\"}"
+        }
+      },
+      "response": {
+        "status": 201,
+        "statusText": "Created",
+        "content": {
+          "mimeType": "application/json",
+          "text": "{\"booking_id\":\"NS-20481\",\"status\":\"confirmed\",\"total\":{\"amount\":6840,\"currency\":\"INR\"}}"
+        },
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      }
+    },
+    {
+      "startedDateTime": "2026-11-15T10:00:08+05:30",
+      "time": 21,
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8001/api/v1/bookings/NS-20481",
+        "headers": [
+          {
+            "name": "Accept",
+            "value": "application/json"
+          },
+          {
+            "name": "Authorization",
+            "value": "Bearer demo-token-northstar"
+          },
+          {
+            "name": "X-Agency-ID",
+            "value": "agency_northstar"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "content": {
+          "mimeType": "application/json",
+          "text": "{\"booking_id\":\"NS-20481\",\"flight\":\"6E-218\",\"status\":\"confirmed\",\"traveler\":\"Aarav Mehta\",\"price\":6840}"
+        },
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      }
+    },
+    {
+      "startedDateTime": "2026-11-15T10:00:12+05:30",
+      "time": 24,
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8001/api/v1/bookings/SR-77103",
+        "headers": [
+          {
+            "name": "Accept",
+            "value": "application/json"
+          },
+          {
+            "name": "Authorization",
+            "value": "Bearer demo-token-skyroute"
+          },
+          {
+            "name": "X-Agency-ID",
+            "value": "agency_skyroute"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "content": {
+          "mimeType": "application/json",
+          "text": "{\"booking_id\":\"SR-77103\",\"flight\":\"UK-823\",\"status\":\"confirmed\",\"traveler\":\"Kabir Shah\",\"price\":9320}"
+        },
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      }
+    }
+  ]
+}
