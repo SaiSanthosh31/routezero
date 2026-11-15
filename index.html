@@ -3,172 +3,132 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RouteZero — Autonomous Travel API DAST</title>
+  <title>RouteZero — Travel API DAST</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #000000;
+      color: #e4e4e7;
+    }
     .mono { font-family: 'JetBrains Mono', monospace; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #000000; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-rose-500 selection:text-white">
+<body class="min-h-screen flex flex-col antialiased selection:bg-zinc-800 selection:text-white">
 
-  <!-- Navbar -->
-  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="h-9 w-9 rounded-lg bg-gradient-to-tr from-rose-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
-        <i class="fa-solid fa-shield-halved text-white text-lg"></i>
+  <!-- Header -->
+  <header class="border-b border-zinc-800 bg-black px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-sm tracking-widest uppercase text-white mono">RouteZero</span>
+        <span class="text-[10px] px-1.5 py-0.5 border border-zinc-700 text-zinc-400 mono">DAST</span>
+        <span id="modeBadge" class="text-[10px] px-1.5 py-0.5 border border-zinc-700 text-zinc-400 mono">STANDALONE</span>
       </div>
-      <div>
-        <div class="flex items-center gap-2">
-          <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">RouteZero</span>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 font-medium">Real-Time DAST</span>
-          <span id="modeBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">LIVE API</span>
-        </div>
-        <p class="text-xs text-slate-400">Autonomous Security Agent for TBO B2B Travel APIs</p>
-      </div>
+      <span class="text-zinc-600 text-xs">|</span>
+      <span class="text-xs text-zinc-400">Autonomous Security Engine for TBO Travel APIs</span>
     </div>
 
-    <!-- Controls -->
+    <!-- Actions -->
     <div class="flex items-center gap-3">
-      <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
-        <span class="relative flex h-2 w-2">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-        </span>
-        <span class="text-slate-300">Target: <strong class="text-white mono">TBO Staging (:8001)</strong></span>
+      <div class="text-xs text-zinc-400 mono border border-zinc-800 px-2.5 py-1 rounded bg-zinc-950">
+        TARGET: <span class="text-zinc-200">127.0.0.1:8001</span>
       </div>
 
-      <!-- Kill Switch Toggle -->
-      <button id="killSwitchBtn" onclick="toggleKillSwitch()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition">
-        <i class="fa-solid fa-power-off"></i> Safe Mode: ACTIVE
+      <button id="killSwitchBtn" onclick="toggleKillSwitch()" class="text-xs mono px-3 py-1 border border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 transition">
+        SAFE_MODE: ON
       </button>
 
-      <!-- Export OpenAPI -->
-      <button onclick="downloadOpenApi()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition">
-        <i class="fa-solid fa-file-code"></i> Export OpenAPI
+      <button onclick="downloadOpenApi()" class="text-xs mono px-3 py-1 border border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:text-white transition">
+        EXPORT_OPENAPI
       </button>
 
-      <!-- Scan Trigger Button -->
-      <button id="scanBtn" onclick="triggerScan()" class="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 transition">
-        <i id="scanIcon" class="fa-solid fa-bolt"></i>
-        <span id="scanText">Launch Agent Scan</span>
+      <button id="scanBtn" onclick="triggerScan()" class="text-xs mono font-semibold px-4 py-1 bg-white text-black hover:bg-zinc-200 transition">
+        <span id="scanText">START_SCAN</span>
       </button>
     </div>
   </header>
 
-  <!-- Main Content -->
+  <!-- Workspace -->
   <main class="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
 
-    <!-- Metric Stat Cards -->
+    <!-- Metrics -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
-        <div>
-          <p class="text-xs font-medium text-slate-400">Mapped Endpoints</p>
-          <h3 id="statEndpoints" class="text-2xl font-bold mt-1 text-white mono">0</h3>
-          <p class="text-xs text-slate-500 mt-1"><span id="statActive">0</span> Active · <span id="statZombie" class="text-amber-400">0</span> Zombie · <span id="statShadow" class="text-rose-400">0</span> Shadow</p>
-        </div>
-        <div class="h-10 w-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-lg">
-          <i class="fa-solid fa-network-wired"></i>
-        </div>
+      <div class="border border-zinc-800 bg-zinc-950 p-4">
+        <p class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mono">Endpoints Mapped</p>
+        <h3 id="statEndpoints" class="text-2xl font-bold mt-1 text-white mono">0</h3>
+        <p class="text-[11px] text-zinc-500 mt-1 mono">
+          <span id="statActive">0</span> Active / <span id="statZombie" class="text-amber-400">0</span> Zombie / <span id="statShadow" class="text-red-400">0</span> Shadow
+        </p>
       </div>
 
-      <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
-        <div>
-          <p class="text-xs font-medium text-slate-400">Critical Business Exploits</p>
-          <h3 id="statCritical" class="text-2xl font-bold mt-1 text-rose-400 mono">0</h3>
-          <p class="text-xs text-rose-500/80 mt-1">Price tampering & IDOR PII leaks</p>
-        </div>
-        <div class="h-10 w-10 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-lg">
-          <i class="fa-solid fa-triangle-exclamation"></i>
-        </div>
+      <div class="border border-zinc-800 bg-zinc-950 p-4">
+        <p class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mono">Critical Exploits</p>
+        <h3 id="statCritical" class="text-2xl font-bold mt-1 text-red-500 mono">0</h3>
+        <p class="text-[11px] text-zinc-500 mt-1 mono">Price tampering & cross-agency IDOR</p>
       </div>
 
-      <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
-        <div>
-          <p class="text-xs font-medium text-slate-400">High Risk Flaws</p>
-          <h3 id="statHigh" class="text-2xl font-bold mt-1 text-amber-400 mono">0</h3>
-          <p class="text-xs text-amber-500/80 mt-1">Zombie APIs & Logic leaks</p>
-        </div>
-        <div class="h-10 w-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
-          <i class="fa-solid fa-bug"></i>
-        </div>
+      <div class="border border-zinc-800 bg-zinc-950 p-4">
+        <p class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mono">High Vulnerabilities</p>
+        <h3 id="statHigh" class="text-2xl font-bold mt-1 text-amber-500 mono">0</h3>
+        <p class="text-[11px] text-zinc-500 mt-1 mono">Zombie route & telemetry leaks</p>
       </div>
 
-      <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
-        <div>
-          <p class="text-xs font-medium text-slate-400">Autonomous Coverage</p>
-          <h3 id="statAccuracy" class="text-2xl font-bold mt-1 text-emerald-400 mono">100%</h3>
-          <p class="text-xs text-slate-500 mt-1">0% False Positives (Verified PoC)</p>
-        </div>
-        <div class="h-10 w-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg">
-          <i class="fa-solid fa-check-double"></i>
-        </div>
+      <div class="border border-zinc-800 bg-zinc-950 p-4">
+        <p class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mono">Verification Rate</p>
+        <h3 id="statAccuracy" class="text-2xl font-bold mt-1 text-zinc-100 mono">100%</h3>
+        <p class="text-[11px] text-zinc-500 mt-1 mono">0 False Positives (PoC Confirmed)</p>
       </div>
     </div>
 
-    <!-- Center Workspace: Left = Live Logs & Endpoints, Right = Confirmed Vulnerabilities -->
+    <!-- Main Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
       <!-- Left Column (5 Cols) -->
       <div class="lg:col-span-5 space-y-6 flex flex-col">
 
-        <!-- Discovered API Topology -->
-        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col flex-1">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h4 class="text-sm font-semibold flex items-center gap-2">
-              <i class="fa-solid fa-diagram-project text-indigo-400"></i> Discovered API Routes
-            </h4>
-            <span class="text-xs text-slate-400">Zero-Spec Inferred</span>
+        <!-- API Inventory -->
+        <div class="border border-zinc-800 bg-zinc-950 p-4 flex flex-col flex-1">
+          <div class="flex items-center justify-between pb-3 border-b border-zinc-800">
+            <span class="text-xs uppercase tracking-wider mono font-semibold text-zinc-300">API Inventory</span>
+            <span class="text-[10px] text-zinc-500 mono">Inferred Schema</span>
           </div>
 
-          <div id="endpointList" class="mt-3 space-y-2 overflow-y-auto max-h-64 pr-1 text-xs">
-            <p class="text-slate-500 py-6 text-center">No endpoints mapped yet. Click "Launch Agent Scan".</p>
+          <div id="endpointList" class="mt-3 space-y-2 overflow-y-auto max-h-60 pr-1 text-xs">
+            <p class="text-zinc-600 py-6 text-center mono">No endpoints mapped. Click START_SCAN.</p>
           </div>
         </div>
 
-        <!-- Live Agent Activity Terminal -->
-        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-            <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-              <i class="fa-solid fa-terminal text-rose-400"></i> Autonomous Agent Stream
-            </h4>
-            <span class="flex h-2 w-2 relative">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-            </span>
+        <!-- Terminal Logs -->
+        <div class="border border-zinc-800 bg-black p-4 flex flex-col">
+          <div class="flex items-center justify-between pb-2 border-b border-zinc-900">
+            <span class="text-[10px] uppercase tracking-wider mono text-zinc-400">Agent Activity Stream</span>
+            <span class="text-[10px] text-zinc-600 mono">STDOUT</span>
           </div>
 
-          <div id="terminalLogs" class="mt-2.5 font-mono text-[11px] leading-relaxed bg-black/60 rounded-lg p-3 h-48 overflow-y-auto space-y-1 text-slate-300">
-            <div class="text-slate-500">[System] Agent engine ready. Target: http://127.0.0.1:8001</div>
+          <div id="terminalLogs" class="mt-2.5 font-mono text-[11px] leading-relaxed p-2 h-44 overflow-y-auto space-y-1 text-zinc-400 bg-black">
+            <div class="text-zinc-600">[sys] Engine initialized. Awaiting scan trigger.</div>
           </div>
         </div>
 
       </div>
 
-      <!-- Right Column: Confirmed Vulnerabilities (7 Cols) -->
-      <div class="lg:col-span-7 bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex flex-col">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+      <!-- Right Column: Findings (7 Cols) -->
+      <div class="lg:col-span-7 border border-zinc-800 bg-zinc-950 p-4 flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-zinc-800">
           <div>
-            <h4 class="text-sm font-semibold flex items-center gap-2">
-              <i class="fa-solid fa-shield-virus text-rose-400"></i> Verified Vulnerability Findings
-            </h4>
-            <p class="text-xs text-slate-400">Auto-triaged with minimal reproduction proof</p>
+            <span class="text-xs uppercase tracking-wider mono font-semibold text-zinc-300">Verified Findings</span>
+            <span class="text-xs text-zinc-500 ml-2">Triaged with execution proof</span>
           </div>
-          <span id="findingBadgeCount" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30">0 Findings</span>
+          <span id="findingBadgeCount" class="text-[10px] px-2 py-0.5 border border-zinc-800 mono text-zinc-400">0 Findings</span>
         </div>
 
-        <!-- Findings List -->
-        <div id="findingsContainer" class="mt-4 space-y-3 overflow-y-auto max-h-[580px] pr-1">
-          <div class="text-center py-16 text-slate-500">
-            <i class="fa-solid fa-radar text-4xl mb-3 opacity-30"></i>
-            <p class="text-sm">Scan has not run yet.</p>
-            <p class="text-xs mt-1 text-slate-600">Hit "Launch Agent Scan" above to discover and attack APIs.</p>
+        <div id="findingsContainer" class="mt-4 space-y-3 overflow-y-auto max-h-[540px] pr-1">
+          <div class="text-center py-16 text-zinc-600 mono text-xs">
+            Scan pending. Run START_SCAN to test endpoints.
           </div>
         </div>
       </div>
@@ -177,54 +137,54 @@
 
   </main>
 
-  <!-- PoC Modal Inspector -->
+  <!-- PoC Modal -->
   <div id="pocModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-      <button onclick="closeModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg">
-        <i class="fa-solid fa-xmark"></i>
+    <div class="bg-black border border-zinc-700 max-w-3xl w-full p-6 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <button onclick="closeModal()" class="absolute top-5 right-5 text-zinc-400 hover:text-white mono text-xs">
+        [CLOSE]
       </button>
 
       <div class="flex items-center gap-3">
-        <span id="modalSeverity" class="px-2.5 py-0.5 rounded text-xs font-bold bg-rose-500 text-white">CRITICAL</span>
-        <h3 id="modalTitle" class="text-base font-bold text-white">Vulnerability Title</h3>
+        <span id="modalSeverity" class="px-2 py-0.5 text-[10px] font-bold mono">CRITICAL</span>
+        <h3 id="modalTitle" class="text-sm font-semibold text-white">Title</h3>
       </div>
 
-      <div class="text-xs text-slate-300 space-y-2">
-        <p><strong class="text-slate-400">Endpoint:</strong> <span id="modalEndpoint" class="mono text-rose-300"></span></p>
-        <p><strong class="text-slate-400">Description:</strong> <span id="modalDesc"></span></p>
-        <div class="p-3 bg-rose-950/30 border border-rose-500/20 rounded-lg">
-          <strong class="text-rose-400 block mb-1">Business Impact:</strong>
-          <span id="modalImpact" class="text-slate-300"></span>
+      <div class="text-xs text-zinc-300 space-y-2 mono">
+        <p><span class="text-zinc-500">ENDPOINT:</span> <span id="modalEndpoint" class="text-zinc-200"></span></p>
+        <p><span class="text-zinc-500">SUMMARY:</span> <span id="modalDesc" class="text-zinc-300"></span></p>
+        <div class="p-3 bg-zinc-950 border border-zinc-800">
+          <span class="text-zinc-500 block mb-1">BUSINESS IMPACT:</span>
+          <span id="modalImpact" class="text-zinc-300"></span>
         </div>
       </div>
 
-      <!-- Reproduction Curl -->
+      <!-- Curl -->
       <div>
         <div class="flex items-center justify-between mb-1.5">
-          <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Reproduction PoC (curl)</label>
-          <button onclick="copyCurl()" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1">
-            <i class="fa-regular fa-copy"></i> <span id="copyText">Copy curl</span>
+          <span class="text-[10px] mono text-zinc-500 uppercase">Reproduction Command</span>
+          <button onclick="copyCurl()" class="text-[10px] mono text-zinc-400 hover:text-white">
+            <span id="copyText">[COPY CURL]</span>
           </button>
         </div>
-        <pre id="modalCurl" class="mono text-xs bg-black/70 p-3 rounded-lg border border-slate-800 text-emerald-400 overflow-x-auto whitespace-pre-wrap"></pre>
+        <pre id="modalCurl" class="mono text-xs bg-zinc-950 p-3 border border-zinc-800 text-zinc-200 overflow-x-auto whitespace-pre-wrap"></pre>
       </div>
 
-      <!-- Request / Response Proof Tabs -->
+      <!-- Proof Tabs -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
         <div>
-          <label class="font-semibold text-slate-400 block mb-1">Attack Request Data</label>
-          <pre id="modalReq" class="mono bg-black/70 p-3 rounded-lg border border-slate-800 text-slate-300 overflow-x-auto max-h-44 overflow-y-auto"></pre>
+          <span class="text-[10px] mono text-zinc-500 block mb-1">Request Payload</span>
+          <pre id="modalReq" class="mono bg-zinc-950 p-3 border border-zinc-800 text-zinc-400 overflow-x-auto max-h-40 overflow-y-auto"></pre>
         </div>
         <div>
-          <label class="font-semibold text-slate-400 block mb-1">Raw Response Proof (Exploit Verified)</label>
-          <pre id="modalRes" class="mono bg-black/70 p-3 rounded-lg border border-slate-800 text-rose-300 overflow-x-auto max-h-44 overflow-y-auto"></pre>
+          <span class="text-[10px] mono text-zinc-500 block mb-1">Response Proof</span>
+          <pre id="modalRes" class="mono bg-zinc-950 p-3 border border-zinc-800 text-zinc-300 overflow-x-auto max-h-40 overflow-y-auto"></pre>
         </div>
       </div>
 
-      <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
-        <span class="text-xs text-slate-500">Status: <strong class="text-emerald-400">CONFIRMED VULNERABLE</strong></span>
-        <button id="modalRetestBtn" onclick="triggerRetest()" class="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-2 transition">
-          <i class="fa-solid fa-rotate-right"></i> Retest Exploit
+      <div class="pt-3 border-t border-zinc-800 flex items-center justify-between">
+        <span class="text-xs mono text-zinc-500">STATUS: <span class="text-red-400">CONFIRMED_VULNERABLE</span></span>
+        <button id="modalRetestBtn" onclick="triggerRetest()" class="px-3 py-1.5 text-xs mono border border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 transition">
+          RETEST_EXPLOIT
         </button>
       </div>
     </div>
@@ -235,81 +195,80 @@
     let isLiveBackend = false;
     let currentFindingId = null;
 
-    // Static Demo Dataset for GitHub Pages viewer
     const DEMO_ENDPOINTS = [
-      { id: 1, path: "/api/v2/flights/search", method: "GET", category: "active", params: { origin: "DEL", destination: "DXB" } },
-      { id: 2, path: "/api/v2/bookings/create", method: "POST", category: "active", params: { agency_id: "str", price: "float" } },
-      { id: 3, path: "/api/v2/bookings/{booking_id}", method: "GET", category: "active", params: { booking_id: "str" } },
-      { id: 4, path: "/api/v2/refunds/request", method: "POST", category: "active", params: { booking_id: "str", amount: "float" } },
-      { id: 5, path: "/api/v1/legacy/discounts", method: "GET", category: "zombie", params: {} },
-      { id: 6, path: "/api/v2/internal/admin/stats", method: "GET", category: "shadow", params: {} }
+      { id: 1, path: "/api/v2/flights/search", method: "GET", category: "active" },
+      { id: 2, path: "/api/v2/bookings/create", method: "POST", category: "active" },
+      { id: 3, path: "/api/v2/bookings/{booking_id}", method: "GET", category: "active" },
+      { id: 4, path: "/api/v2/refunds/request", method: "POST", category: "active" },
+      { id: 5, path: "/api/v1/legacy/discounts", method: "GET", category: "zombie" },
+      { id: 6, path: "/api/v2/internal/admin/stats", method: "GET", category: "shadow" }
     ];
 
     const DEMO_FINDINGS = [
       {
         id: 1,
-        title: "Business Logic: Unchecked Booking Price Tampering",
+        title: "Booking Price Tampering (Client Parameter Trust)",
         severity: "CRITICAL",
-        vuln_type: "BUSINESS_LOGIC_TAMPERING",
+        vuln_type: "BUSINESS_LOGIC",
         endpoint: "/api/v2/bookings/create",
         method: "POST",
-        description: "The endpoint accepts client-supplied pricing without server-side validation. An attacker can set flight/hotel booking prices to $1.00.",
-        business_impact: "Direct financial revenue loss and fraudulent ticket issuance across TBO inventory.",
+        description: "The service accepts client-submitted price value without server recalculation. Flight booked for $1.00 instead of standard fare.",
+        business_impact: "Direct inventory revenue loss and fraudulent ticket issuance.",
         reproduction_curl: "curl -X POST 'http://127.0.0.1:8001/api/v2/bookings/create' -H 'Content-Type: application/json' -d '{\"agency_id\": \"AGENCY-001\", \"flight_number\": \"AI-202\", \"passenger_name\": \"Attacker Test\", \"passport_no\": \"X0000000\", \"price\": 1.0}'",
-        proof_request: "{\n  \"agency_id\": \"AGENCY-001\",\n  \"flight_number\": \"AI-202\",\n  \"passenger_name\": \"Attacker Test\",\n  \"passport_no\": \"X0000000\",\n  \"price\": 1.0\n}",
-        proof_response: "{\n  \"status\": \"success\",\n  \"message\": \"Booking created\",\n  \"booking\": {\n    \"booking_id\": \"BK-1003\",\n    \"agency_id\": \"AGENCY-001\",\n    \"passenger_name\": \"Attacker Test\",\n    \"passport_no\": \"X0000000\",\n    \"flight\": \"AI-202\",\n    \"price\": 1.0,\n    \"status\": \"CONFIRMED\"\n  }\n}"
+        proof_request: "{\n  \"agency_id\": \"AGENCY-001\",\n  \"flight_number\": \"AI-202\",\n  \"price\": 1.0\n}",
+        proof_response: "{\n  \"status\": \"success\",\n  \"booking\": {\n    \"booking_id\": \"BK-1003\",\n    \"price\": 1.0,\n    \"status\": \"CONFIRMED\"\n  }\n}"
       },
       {
         id: 2,
-        title: "Broken Object Level Authorization (IDOR) with PII Leak",
+        title: "Cross-Tenant IDOR & Passenger PII Exfiltration",
         severity: "CRITICAL",
-        vuln_type: "ACCESS_CONTROL_IDOR",
+        vuln_type: "IDOR",
         endpoint: "/api/v2/bookings/BK-1001",
         method: "GET",
-        description: "Booking records are accessible across agency boundaries without tenancy verification. Passenger passport numbers and travel details are leaked.",
-        business_impact: "Severe breach of India DPDP Act and international privacy laws. Agency customer data exposed to competing travel agents.",
+        description: "Agency 2 can query and exfiltrate Agency 1's booking records without authorization barrier.",
+        business_impact: "Violation of India DPDP Act 2023. Passport details and passenger records exposed to unauthorized third parties.",
         reproduction_curl: "curl -X GET 'http://127.0.0.1:8001/api/v2/bookings/BK-1001' -H 'X-Agency-Id: AGENCY-002'",
         proof_request: "Headers: {\"X-Agency-Id\": \"AGENCY-002\"}",
-        proof_response: "{\n  \"status\": \"success\",\n  \"booking\": {\n    \"booking_id\": \"BK-1001\",\n    \"agency_id\": \"AGENCY-001\",\n    \"passenger_name\": \"John Doe\",\n    \"passport_no\": \"Z8912345\",\n    \"flight\": \"AI-202 (DEL -> LHR)\",\n    \"price\": 1200,\n    \"status\": \"CONFIRMED\"\n  }\n}"
+        proof_response: "{\n  \"booking_id\": \"BK-1001\",\n  \"agency_id\": \"AGENCY-001\",\n  \"passenger_name\": \"John Doe\",\n  \"passport_no\": \"Z8912345\"\n}"
       },
       {
         id: 3,
-        title: "Zombie Endpoint: Deprecated API Leaking Internal Discount Codes",
+        title: "Zombie Route: Deprecated Promotional API Leak",
         severity: "HIGH",
         vuln_type: "ZOMBIE_API",
         endpoint: "/api/v1/legacy/discounts",
         method: "GET",
-        description: "Deprecated /v1 route is still alive in production staging and serves confidential 50% discount codes without authentication.",
-        business_impact: "Unauthorized margin loss and exposure of forgotten legacy routes to external threat actors.",
+        description: "Abandoned /v1 route continues to serve valid 50% discount codes without authentication.",
+        business_impact: "Margin erosion via unauthorized corporate voucher extraction.",
         reproduction_curl: "curl -X GET 'http://127.0.0.1:8001/api/v1/legacy/discounts'",
         proof_request: "GET /api/v1/legacy/discounts",
-        proof_response: "{\n  \"warning\": \"DEPRECATED ENDPOINT\",\n  \"promo_code\": \"SECRET_STAFF_50_OFF\",\n  \"discount_percent\": 50,\n  \"expires\": \"2021-12-31\"\n}"
+        proof_response: "{\n  \"promo_code\": \"SECRET_STAFF_50_OFF\",\n  \"discount_percent\": 50\n}"
       },
       {
         id: 4,
-        title: "Shadow Endpoint: Internal System Metrics & DB Connection String Exposed",
+        title: "Shadow Route: Internal System Telemetry Exposed",
         severity: "HIGH",
         vuln_type: "SHADOW_API",
         endpoint: "/api/v2/internal/admin/stats",
         method: "GET",
-        description: "Undocumented /internal endpoint is publicly reachable and leaks database connection details and internal telemetry.",
-        business_impact: "Internal architecture reconnaissance aid for attackers, facilitating lateral movement and database targeting.",
+        description: "Undocumented internal metrics endpoint exposed publicly, leaking database connection string and environment details.",
+        business_impact: "Internal architecture disclosure facilitating targeted lateral attacks.",
         reproduction_curl: "curl -X GET 'http://127.0.0.1:8001/api/v2/internal/admin/stats'",
         proof_request: "GET /api/v2/internal/admin/stats",
-        proof_response: "{\n  \"service\": \"tbo-booking-engine\",\n  \"environment\": \"production-like-staging\",\n  \"active_agencies\": 2,\n  \"total_revenue\": 2050,\n  \"db_connection\": \"sqlite:///tbo_travel.db\"\n}"
+        proof_response: "{\n  \"environment\": \"production-like-staging\",\n  \"db_connection\": \"sqlite:///tbo_travel.db\"\n}"
       },
       {
         id: 5,
-        title: "Business Logic: Double Refund Without State Verification",
+        title: "Unvalidated Double Refund State Transition",
         severity: "HIGH",
-        vuln_type: "BUSINESS_LOGIC_REFUND",
+        vuln_type: "BUSINESS_LOGIC",
         endpoint: "/api/v2/refunds/request",
         method: "POST",
-        description: "Refund requests are processed repeatedly without checking whether the booking is already cancelled/refunded.",
-        business_impact: "Fraudulent depletion of supplier/agency refund pools.",
+        description: "Endpoint processes refund transactions repeatedly without verifying current booking status.",
+        business_impact: "Financial drain on supplier escrow funds.",
         reproduction_curl: "curl -X POST 'http://127.0.0.1:8001/api/v2/refunds/request' -H 'Content-Type: application/json' -d '{\"booking_id\": \"BK-1002\", \"amount\": 850.0}'",
         proof_request: "{\n  \"booking_id\": \"BK-1002\",\n  \"amount\": 850.0\n}",
-        proof_response: "{\n  \"status\": \"success\",\n  \"refund_id\": \"RF-9988\",\n  \"amount_refunded\": 850.0,\n  \"booking_status\": \"REFUNDED\"\n}"
+        proof_response: "{\n  \"refund_id\": \"RF-9988\",\n  \"amount_refunded\": 850.0,\n  \"booking_status\": \"REFUNDED\"\n}"
       }
     ];
 
@@ -323,14 +282,14 @@
         clearTimeout(timeoutId);
         if (res.ok) {
           isLiveBackend = true;
-          document.getElementById('modeBadge').innerText = "LIVE BACKEND";
-          document.getElementById('modeBadge').className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono";
+          document.getElementById('modeBadge').innerText = "LIVE_BACKEND";
+          document.getElementById('modeBadge').className = "text-[10px] px-1.5 py-0.5 border border-zinc-700 text-zinc-300 mono";
           return true;
         }
       } catch (e) {
         isLiveBackend = false;
-        document.getElementById('modeBadge').innerText = "INTERACTIVE DEMO";
-        document.getElementById('modeBadge').className = "text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono";
+        document.getElementById('modeBadge').innerText = "STANDALONE_DEMO";
+        document.getElementById('modeBadge').className = "text-[10px] px-1.5 py-0.5 border border-zinc-800 text-zinc-500 mono";
       }
       return false;
     }
@@ -357,34 +316,25 @@
 
           if (status.is_running) {
             document.getElementById('scanBtn').disabled = true;
-            document.getElementById('scanText').innerText = "Scanning in Progress...";
-            document.getElementById('scanIcon').className = "fa-solid fa-spinner fa-spin";
+            document.getElementById('scanText').innerText = "SCANNING...";
           } else {
             document.getElementById('scanBtn').disabled = false;
-            document.getElementById('scanText').innerText = "Launch Agent Scan";
-            document.getElementById('scanIcon').className = "fa-solid fa-bolt";
+            document.getElementById('scanText').innerText = "START_SCAN";
           }
         } catch (err) {
-          console.warn("Backend error, falling to demo:", err);
+          console.warn("Backend poll error:", err);
         }
       }
     }
 
     function updateStats(endpoints, findings) {
       document.getElementById('statEndpoints').innerText = endpoints.length;
-      const active = endpoints.filter(e => e.category === 'active').length;
-      const zombie = endpoints.filter(e => e.category === 'zombie').length;
-      const shadow = endpoints.filter(e => e.category === 'shadow').length;
+      document.getElementById('statActive').innerText = endpoints.filter(e => e.category === 'active').length;
+      document.getElementById('statZombie').innerText = endpoints.filter(e => e.category === 'zombie').length;
+      document.getElementById('statShadow').innerText = endpoints.filter(e => e.category === 'shadow').length;
 
-      document.getElementById('statActive').innerText = active;
-      document.getElementById('statZombie').innerText = zombie;
-      document.getElementById('statShadow').innerText = shadow;
-
-      const critical = findings.filter(f => f.severity === 'CRITICAL').length;
-      const high = findings.filter(f => f.severity === 'HIGH').length;
-
-      document.getElementById('statCritical').innerText = critical;
-      document.getElementById('statHigh').innerText = high;
+      document.getElementById('statCritical').innerText = findings.filter(f => f.severity === 'CRITICAL').length;
+      document.getElementById('statHigh').innerText = findings.filter(f => f.severity === 'HIGH').length;
       document.getElementById('findingBadgeCount').innerText = `${findings.length} Findings`;
     }
 
@@ -393,17 +343,17 @@
       if (endpoints.length === 0) return;
 
       container.innerHTML = endpoints.map(ep => {
-        let badgeColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-        if (ep.category === 'zombie') badgeColor = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-        if (ep.category === 'shadow') badgeColor = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+        let tag = "text-zinc-400 border-zinc-800";
+        if (ep.category === 'zombie') tag = "text-amber-400 border-amber-900/60";
+        if (ep.category === 'shadow') tag = "text-red-400 border-red-900/60";
 
         return `
-          <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition">
-            <div class="flex items-center gap-2 overflow-hidden">
-              <span class="mono font-bold text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">${ep.method}</span>
-              <span class="mono text-slate-200 truncate">${ep.path}</span>
+          <div class="flex items-center justify-between p-2 border border-zinc-900 bg-black hover:border-zinc-800 transition">
+            <div class="flex items-center gap-2 overflow-hidden mono">
+              <span class="text-[10px] text-zinc-500 font-bold">${ep.method}</span>
+              <span class="text-zinc-300 truncate text-[11px]">${ep.path}</span>
             </div>
-            <span class="px-2 py-0.5 text-[10px] uppercase font-bold rounded-full border ${badgeColor}">
+            <span class="text-[9px] uppercase px-1.5 py-0.2 border ${tag} mono">
               ${ep.category}
             </span>
           </div>
@@ -418,22 +368,20 @@
 
       container.innerHTML = findings.map(f => {
         const isCrit = f.severity === 'CRITICAL';
-        const badgeColor = isCrit ? 'bg-rose-500 text-white' : 'bg-amber-500 text-slate-950';
+        const badgeColor = isCrit ? 'text-red-400 border-red-900/80 bg-red-950/20' : 'text-amber-400 border-amber-900/80 bg-amber-950/20';
 
         return `
-          <div onclick="openModal(${f.id})" class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-rose-500/50 cursor-pointer transition shadow-md group">
+          <div onclick="openModal(${f.id})" class="p-3 border border-zinc-800/80 bg-black hover:border-zinc-600 cursor-pointer transition">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <div class="flex items-center gap-2 mb-1.5">
-                  <span class="px-2 py-0.5 text-[10px] font-black uppercase rounded ${badgeColor}">${f.severity}</span>
-                  <span class="mono text-xs text-slate-400">${f.method} ${f.endpoint}</span>
+                <div class="flex items-center gap-2 mb-1 mono">
+                  <span class="px-1.5 py-0.2 text-[9px] font-bold border ${badgeColor}">${f.severity}</span>
+                  <span class="text-[11px] text-zinc-500">${f.method} ${f.endpoint}</span>
                 </div>
-                <h5 class="text-sm font-semibold text-white group-hover:text-rose-400 transition">${f.title}</h5>
-                <p class="text-xs text-slate-400 mt-1 line-clamp-2">${f.description}</p>
+                <h5 class="text-xs font-semibold text-zinc-100 hover:text-white">${f.title}</h5>
+                <p class="text-[11px] text-zinc-500 mt-1 line-clamp-2">${f.description}</p>
               </div>
-              <button class="text-slate-500 group-hover:text-rose-400 p-1 text-sm">
-                <i class="fa-solid fa-chevron-right"></i>
-              </button>
+              <span class="text-zinc-600 hover:text-zinc-300 text-xs mono">-></span>
             </div>
           </div>
         `;
@@ -445,9 +393,9 @@
       if (logs.length === 0) return;
       container.innerHTML = logs.slice(0, 30).map(l => `
         <div>
-          <span class="text-slate-500">[${l.agent}]</span>
-          <span class="text-rose-400">${l.action}</span>:
-          <span class="text-slate-300">${l.details}</span>
+          <span class="text-zinc-600">[${l.agent}]</span>
+          <span class="text-zinc-300">${l.action}</span>:
+          <span class="text-zinc-500">${l.details}</span>
         </div>
       `).join('');
     }
@@ -455,33 +403,30 @@
     async function triggerScan() {
       const scanBtn = document.getElementById('scanBtn');
       const scanText = document.getElementById('scanText');
-      const scanIcon = document.getElementById('scanIcon');
 
       scanBtn.disabled = true;
-      scanText.innerText = "Scanning in Progress...";
-      scanIcon.className = "fa-solid fa-spinner fa-spin";
+      scanText.innerText = "SCANNING...";
 
       if (isLiveBackend) {
         try {
           await fetch(`${API_BASE}/scan/start`, { method: 'POST' });
           fetchData();
         } catch (e) {
-          alert("Failed to start scan: " + e.message);
+          alert("Scan error: " + e.message);
         }
       } else {
-        // Run simulated scan for GitHub Pages viewer
         const terminal = document.getElementById('terminalLogs');
         const simulatedLogs = [
-          { agent: "Orchestrator", action: "SCAN_START", details: "Targeting platform at http://127.0.0.1:8001" },
-          { agent: "ReconAgent", action: "ENDPOINT_MAPPED", details: "GET /api/v2/flights/search [ACTIVE]" },
-          { agent: "ReconAgent", action: "ENDPOINT_MAPPED", details: "POST /api/v2/bookings/create [ACTIVE]" },
-          { agent: "AttackPlanner", action: "PLAN_GENERATED", details: "Attack: Zero/Manipulated Fare Exploit" },
-          { agent: "VerifierAgent", action: "VULNERABILITY_CONFIRMED", details: "[CRITICAL] Booking Price Tampering" },
-          { agent: "ReconAgent", action: "ENDPOINT_MAPPED", details: "GET /api/v1/legacy/discounts [ZOMBIE]" },
-          { agent: "VerifierAgent", action: "VULNERABILITY_CONFIRMED", details: "[HIGH] Deprecated Promo Leak" },
-          { agent: "ReconAgent", action: "ENDPOINT_MAPPED", details: "GET /api/v2/internal/admin/stats [SHADOW]" },
-          { agent: "VerifierAgent", action: "VULNERABILITY_CONFIRMED", details: "[HIGH] Internal Telemetry Leak" },
-          { agent: "Orchestrator", action: "SCAN_COMPLETE", details: "Scan finished. Endpoints: 6, Vulnerabilities: 5" }
+          { agent: "Orchestrator", action: "SCAN_START", details: "Targeting 127.0.0.1:8001" },
+          { agent: "ReconAgent", action: "ROUTE_MAP", details: "GET /api/v2/flights/search [ACTIVE]" },
+          { agent: "ReconAgent", action: "ROUTE_MAP", details: "POST /api/v2/bookings/create [ACTIVE]" },
+          { agent: "AttackPlanner", action: "GEN_EXPLOIT", details: "Testing parameter trust: price override" },
+          { agent: "VerifierAgent", action: "VULN_CONFIRMED", details: "[CRITICAL] Booking Price Tampering ($1.00 accepted)" },
+          { agent: "ReconAgent", action: "ROUTE_MAP", details: "GET /api/v1/legacy/discounts [ZOMBIE]" },
+          { agent: "VerifierAgent", action: "VULN_CONFIRMED", details: "[HIGH] Unauthenticated Promo Exfiltration" },
+          { agent: "ReconAgent", action: "ROUTE_MAP", details: "GET /api/v2/internal/admin/stats [SHADOW]" },
+          { agent: "VerifierAgent", action: "VULN_CONFIRMED", details: "[HIGH] DB Telemetry Disclosure" },
+          { agent: "Orchestrator", action: "SCAN_COMPLETE", details: "Complete. 6 Routes, 5 Confirmed Vulnerabilities." }
         ];
 
         let index = 0;
@@ -490,7 +435,7 @@
           if (index < simulatedLogs.length) {
             const l = simulatedLogs[index];
             const div = document.createElement('div');
-            div.innerHTML = `<span class="text-slate-500">[${l.agent}]</span> <span class="text-rose-400">${l.action}</span>: <span class="text-slate-300">${l.details}</span>`;
+            div.innerHTML = `<span class="text-zinc-600">[${l.agent}]</span> <span class="text-zinc-300">${l.action}</span>: <span class="text-zinc-500">${l.details}</span>`;
             terminal.appendChild(div);
             terminal.scrollTop = terminal.scrollHeight;
             index++;
@@ -500,10 +445,9 @@
             renderEndpoints(DEMO_ENDPOINTS);
             renderFindings(DEMO_FINDINGS);
             scanBtn.disabled = false;
-            scanText.innerText = "Launch Agent Scan";
-            scanIcon.className = "fa-solid fa-bolt";
+            scanText.innerText = "START_SCAN";
           }
-        }, 300);
+        }, 220);
       }
     }
 
@@ -513,7 +457,7 @@
       currentFindingId = f.id;
 
       document.getElementById('modalSeverity').innerText = f.severity;
-      document.getElementById('modalSeverity').className = `px-2.5 py-0.5 rounded text-xs font-bold ${f.severity === 'CRITICAL' ? 'bg-rose-500 text-white' : 'bg-amber-500 text-slate-950'}`;
+      document.getElementById('modalSeverity').className = `px-2 py-0.5 text-[10px] font-bold mono border ${f.severity === 'CRITICAL' ? 'text-red-400 border-red-900 bg-red-950/20' : 'text-amber-400 border-amber-900 bg-amber-950/20'}`;
       document.getElementById('modalTitle').innerText = f.title;
       document.getElementById('modalEndpoint').innerText = `${f.method} ${f.endpoint}`;
       document.getElementById('modalDesc').innerText = f.description;
@@ -532,13 +476,13 @@
     function copyCurl() {
       const curl = document.getElementById('modalCurl').innerText;
       navigator.clipboard.writeText(curl);
-      document.getElementById('copyText').innerText = "Copied!";
-      setTimeout(() => document.getElementById('copyText').innerText = "Copy curl", 2000);
+      document.getElementById('copyText').innerText = "[COPIED]";
+      setTimeout(() => document.getElementById('copyText').innerText = "[COPY CURL]", 2000);
     }
 
     async function triggerRetest() {
       const btn = document.getElementById('modalRetestBtn');
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Retesting Exploit...`;
+      btn.innerText = "RETESTING...";
       btn.disabled = true;
 
       if (isLiveBackend && currentFindingId) {
@@ -546,12 +490,12 @@
       }
 
       setTimeout(() => {
-        btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> Confirmed Still Exploitable`;
+        btn.innerHTML = `<span class="text-red-400">EXPLOITABLE_CONFIRMED</span>`;
         setTimeout(() => {
-          btn.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Retest Exploit`;
+          btn.innerText = "RETEST_EXPLOIT";
           btn.disabled = false;
         }, 2000);
-      }, 700);
+      }, 600);
     }
 
     async function toggleKillSwitch() {
@@ -560,26 +504,12 @@
         try {
           const res = await fetch(`${API_BASE}/safety/kill-switch`, { method: 'POST' });
           const data = await res.json();
-          if (data.kill_switch_active) {
-            btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition";
-            btn.innerHTML = `<i class="fa-solid fa-ban"></i> Kill Switch: PAUSED`;
-          } else {
-            btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition";
-            btn.innerHTML = `<i class="fa-solid fa-power-off"></i> Safe Mode: ACTIVE`;
-          }
+          btn.innerText = data.kill_switch_active ? "SAFE_MODE: PAUSED" : "SAFE_MODE: ON";
           fetchData();
           return;
         } catch (err) {}
       }
-
-      // Standalone toggle
-      if (btn.classList.contains('text-amber-300')) {
-        btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition";
-        btn.innerHTML = `<i class="fa-solid fa-ban"></i> Kill Switch: PAUSED`;
-      } else {
-        btn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition";
-        btn.innerHTML = `<i class="fa-solid fa-power-off"></i> Safe Mode: ACTIVE`;
-      }
+      btn.innerText = btn.innerText.includes("ON") ? "SAFE_MODE: PAUSED" : "SAFE_MODE: ON";
     }
 
     function downloadOpenApi() {
@@ -587,7 +517,6 @@
         window.open('/api/export/openapi.json', '_blank');
         return;
       }
-      // Demo download for GitHub Pages
       const sampleSpec = {
         openapi: "3.0.0",
         info: { title: "RouteZero Inferred API Catalog (TBO Travel Platform)", version: "1.0.0" },
@@ -607,14 +536,12 @@
       a.click();
     }
 
-    // Initialize
     (async () => {
       await checkBackend();
       if (isLiveBackend) {
         fetchData();
         setInterval(fetchData, 2000);
       } else {
-        // Render initial demo state
         updateStats(DEMO_ENDPOINTS, DEMO_FINDINGS);
         renderEndpoints(DEMO_ENDPOINTS);
         renderFindings(DEMO_FINDINGS);
