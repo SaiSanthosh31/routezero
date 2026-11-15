@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RouteZero — Travel API DAST</title>
+  <link rel="icon" type="image/png" href="icon.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
@@ -15,18 +16,19 @@
     .mono { font-family: 'JetBrains Mono', monospace; }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: #000000; }
-    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 2px; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-zinc-800 selection:text-white">
 
   <!-- Header -->
-  <header class="border-b border-zinc-800 bg-black px-6 py-3 flex items-center justify-between">
+  <header class="border-b border-zinc-700 bg-black px-6 py-3 flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2.5">
+        <img src="icon.png" alt="RouteZero Logo" class="h-6 w-6 object-contain" onerror="this.style.display='none'">
         <span class="font-bold text-sm tracking-widest uppercase text-white mono">RouteZero</span>
-        <span class="text-[10px] px-1.5 py-0.5 border border-zinc-700 text-zinc-400 mono">DAST</span>
-        <span id="modeBadge" class="text-[10px] px-1.5 py-0.5 border border-zinc-700 text-zinc-400 mono">STANDALONE</span>
+        <span class="text-[10px] px-1.5 py-0.5 border border-zinc-600 text-zinc-300 mono">DAST</span>
+        <span id="modeBadge" class="text-[10px] px-1.5 py-0.5 border border-zinc-600 text-zinc-300 mono">STANDALONE</span>
       </div>
       <span class="text-zinc-600 text-xs">|</span>
       <span class="text-xs text-zinc-400">Autonomous Security Engine for TBO Travel APIs</span>
@@ -34,19 +36,19 @@
 
     <!-- Actions -->
     <div class="flex items-center gap-3">
-      <div class="text-xs text-zinc-400 mono border border-zinc-800 px-2.5 py-1 rounded bg-zinc-950">
-        TARGET: <span class="text-zinc-200">127.0.0.1:8001</span>
+      <div class="text-xs text-zinc-300 mono border border-zinc-700 px-2.5 py-1 bg-zinc-950">
+        TARGET: <span class="text-white">127.0.0.1:8001</span>
       </div>
 
-      <button id="killSwitchBtn" onclick="toggleKillSwitch()" class="text-xs mono px-3 py-1 border border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 transition">
+      <button id="killSwitchBtn" onclick="toggleKillSwitch()" class="text-xs mono px-3 py-1 border border-zinc-600 bg-zinc-950 text-zinc-200 hover:border-white hover:shadow-[0_0_10px_rgba(255,255,255,0.3)] transition">
         SAFE_MODE: ON
       </button>
 
-      <button onclick="downloadOpenApi()" class="text-xs mono px-3 py-1 border border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:text-white transition">
+      <button onclick="downloadOpenApi()" class="text-xs mono px-3 py-1 border border-zinc-600 bg-zinc-950 text-zinc-200 hover:border-white hover:text-white hover:shadow-[0_0_10px_rgba(255,255,255,0.3)] transition">
         EXPORT_OPENAPI
       </button>
 
-      <button id="scanBtn" onclick="triggerScan()" class="text-xs mono font-semibold px-4 py-1 bg-white text-black hover:bg-zinc-200 transition">
+      <button id="scanBtn" onclick="triggerScan()" class="text-xs mono font-bold px-4 py-1.5 bg-white text-black border-2 border-white shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:shadow-[0_0_22px_rgba(255,255,255,0.7)] hover:bg-zinc-100 transition">
         <span id="scanText">START_SCAN</span>
       </button>
     </div>
@@ -57,30 +59,30 @@
 
     <!-- Metrics -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="border border-zinc-800 bg-zinc-950 p-4">
+      <div class="border border-zinc-700 bg-zinc-950 p-4">
         <p class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mono">Endpoints Mapped</p>
         <h3 id="statEndpoints" class="text-2xl font-bold mt-1 text-white mono">0</h3>
-        <p class="text-[11px] text-zinc-500 mt-1 mono">
+        <p class="text-[11px] text-zinc-400 mt-1 mono">
           <span id="statActive">0</span> Active / <span id="statZombie" class="text-amber-400">0</span> Zombie / <span id="statShadow" class="text-red-400">0</span> Shadow
         </p>
       </div>
 
-      <div class="border border-zinc-800 bg-zinc-950 p-4">
+      <div class="border border-zinc-700 bg-zinc-950 p-4">
         <p class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mono">Critical Exploits</p>
         <h3 id="statCritical" class="text-2xl font-bold mt-1 text-red-500 mono">0</h3>
-        <p class="text-[11px] text-zinc-500 mt-1 mono">Price tampering & cross-agency IDOR</p>
+        <p class="text-[11px] text-zinc-400 mt-1 mono">Price tampering & cross-agency IDOR</p>
       </div>
 
-      <div class="border border-zinc-800 bg-zinc-950 p-4">
+      <div class="border border-zinc-700 bg-zinc-950 p-4">
         <p class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mono">High Vulnerabilities</p>
         <h3 id="statHigh" class="text-2xl font-bold mt-1 text-amber-500 mono">0</h3>
-        <p class="text-[11px] text-zinc-500 mt-1 mono">Zombie route & telemetry leaks</p>
+        <p class="text-[11px] text-zinc-400 mt-1 mono">Zombie route & telemetry leaks</p>
       </div>
 
-      <div class="border border-zinc-800 bg-zinc-950 p-4">
+      <div class="border border-zinc-700 bg-zinc-950 p-4">
         <p class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mono">Verification Rate</p>
         <h3 id="statAccuracy" class="text-2xl font-bold mt-1 text-zinc-100 mono">100%</h3>
-        <p class="text-[11px] text-zinc-500 mt-1 mono">0 False Positives (PoC Confirmed)</p>
+        <p class="text-[11px] text-zinc-400 mt-1 mono">0 False Positives (PoC Confirmed)</p>
       </div>
     </div>
 
@@ -91,22 +93,22 @@
       <div class="lg:col-span-5 space-y-6 flex flex-col">
 
         <!-- API Inventory -->
-        <div class="border border-zinc-800 bg-zinc-950 p-4 flex flex-col flex-1">
-          <div class="flex items-center justify-between pb-3 border-b border-zinc-800">
-            <span class="text-xs uppercase tracking-wider mono font-semibold text-zinc-300">API Inventory</span>
-            <span class="text-[10px] text-zinc-500 mono">Inferred Schema</span>
+        <div class="border border-zinc-700 bg-zinc-950 p-4 flex flex-col flex-1">
+          <div class="flex items-center justify-between pb-3 border-b border-zinc-700">
+            <span class="text-xs uppercase tracking-wider mono font-semibold text-zinc-200">API Inventory</span>
+            <span class="text-[10px] text-zinc-400 mono">Inferred Schema</span>
           </div>
 
           <div id="endpointList" class="mt-3 space-y-2 overflow-y-auto max-h-60 pr-1 text-xs">
-            <p class="text-zinc-600 py-6 text-center mono">No endpoints mapped. Click START_SCAN.</p>
+            <p class="text-zinc-500 py-6 text-center mono">No endpoints mapped. Click START_SCAN.</p>
           </div>
         </div>
 
         <!-- Terminal Logs -->
-        <div class="border border-zinc-800 bg-black p-4 flex flex-col">
-          <div class="flex items-center justify-between pb-2 border-b border-zinc-900">
-            <span class="text-[10px] uppercase tracking-wider mono text-zinc-400">Agent Activity Stream</span>
-            <span class="text-[10px] text-zinc-600 mono">STDOUT</span>
+        <div class="border border-zinc-700 bg-black p-4 flex flex-col">
+          <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
+            <span class="text-[10px] uppercase tracking-wider mono text-zinc-300">Agent Activity Stream</span>
+            <span class="text-[10px] text-zinc-500 mono">STDOUT</span>
           </div>
 
           <div id="terminalLogs" class="mt-2.5 font-mono text-[11px] leading-relaxed p-2 h-44 overflow-y-auto space-y-1 text-zinc-400 bg-black">
@@ -117,17 +119,17 @@
       </div>
 
       <!-- Right Column: Findings (7 Cols) -->
-      <div class="lg:col-span-7 border border-zinc-800 bg-zinc-950 p-4 flex flex-col">
-        <div class="flex items-center justify-between pb-3 border-b border-zinc-800">
+      <div class="lg:col-span-7 border border-zinc-700 bg-zinc-950 p-4 flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-zinc-700">
           <div>
-            <span class="text-xs uppercase tracking-wider mono font-semibold text-zinc-300">Verified Findings</span>
-            <span class="text-xs text-zinc-500 ml-2">Triaged with execution proof</span>
+            <span class="text-xs uppercase tracking-wider mono font-semibold text-zinc-200">Verified Findings</span>
+            <span class="text-xs text-zinc-400 ml-2">Triaged with execution proof</span>
           </div>
-          <span id="findingBadgeCount" class="text-[10px] px-2 py-0.5 border border-zinc-800 mono text-zinc-400">0 Findings</span>
+          <span id="findingBadgeCount" class="text-[10px] px-2 py-0.5 border border-zinc-700 mono text-zinc-300">0 Findings</span>
         </div>
 
         <div id="findingsContainer" class="mt-4 space-y-3 overflow-y-auto max-h-[540px] pr-1">
-          <div class="text-center py-16 text-zinc-600 mono text-xs">
+          <div class="text-center py-16 text-zinc-500 mono text-xs">
             Scan pending. Run START_SCAN to test endpoints.
           </div>
         </div>
@@ -138,8 +140,8 @@
   </main>
 
   <!-- PoC Modal -->
-  <div id="pocModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-black border border-zinc-700 max-w-3xl w-full p-6 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+  <div id="pocModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-black border border-zinc-600 max-w-3xl w-full p-6 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <button onclick="closeModal()" class="absolute top-5 right-5 text-zinc-400 hover:text-white mono text-xs">
         [CLOSE]
       </button>
@@ -150,40 +152,40 @@
       </div>
 
       <div class="text-xs text-zinc-300 space-y-2 mono">
-        <p><span class="text-zinc-500">ENDPOINT:</span> <span id="modalEndpoint" class="text-zinc-200"></span></p>
-        <p><span class="text-zinc-500">SUMMARY:</span> <span id="modalDesc" class="text-zinc-300"></span></p>
-        <div class="p-3 bg-zinc-950 border border-zinc-800">
-          <span class="text-zinc-500 block mb-1">BUSINESS IMPACT:</span>
-          <span id="modalImpact" class="text-zinc-300"></span>
+        <p><span class="text-zinc-400">ENDPOINT:</span> <span id="modalEndpoint" class="text-white"></span></p>
+        <p><span class="text-zinc-400">SUMMARY:</span> <span id="modalDesc" class="text-zinc-200"></span></p>
+        <div class="p-3 bg-zinc-950 border border-zinc-700">
+          <span class="text-zinc-400 block mb-1">BUSINESS IMPACT:</span>
+          <span id="modalImpact" class="text-zinc-200"></span>
         </div>
       </div>
 
       <!-- Curl -->
       <div>
         <div class="flex items-center justify-between mb-1.5">
-          <span class="text-[10px] mono text-zinc-500 uppercase">Reproduction Command</span>
-          <button onclick="copyCurl()" class="text-[10px] mono text-zinc-400 hover:text-white">
+          <span class="text-[10px] mono text-zinc-400 uppercase">Reproduction Command</span>
+          <button onclick="copyCurl()" class="text-[10px] mono px-2 py-0.5 border border-zinc-700 text-zinc-300 hover:border-white hover:text-white hover:shadow-[0_0_8px_rgba(255,255,255,0.3)] transition">
             <span id="copyText">[COPY CURL]</span>
           </button>
         </div>
-        <pre id="modalCurl" class="mono text-xs bg-zinc-950 p-3 border border-zinc-800 text-zinc-200 overflow-x-auto whitespace-pre-wrap"></pre>
+        <pre id="modalCurl" class="mono text-xs bg-zinc-950 p-3 border border-zinc-700 text-zinc-100 overflow-x-auto whitespace-pre-wrap"></pre>
       </div>
 
       <!-- Proof Tabs -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
         <div>
-          <span class="text-[10px] mono text-zinc-500 block mb-1">Request Payload</span>
-          <pre id="modalReq" class="mono bg-zinc-950 p-3 border border-zinc-800 text-zinc-400 overflow-x-auto max-h-40 overflow-y-auto"></pre>
+          <span class="text-[10px] mono text-zinc-400 block mb-1">Request Payload</span>
+          <pre id="modalReq" class="mono bg-zinc-950 p-3 border border-zinc-700 text-zinc-300 overflow-x-auto max-h-40 overflow-y-auto"></pre>
         </div>
         <div>
-          <span class="text-[10px] mono text-zinc-500 block mb-1">Response Proof</span>
-          <pre id="modalRes" class="mono bg-zinc-950 p-3 border border-zinc-800 text-zinc-300 overflow-x-auto max-h-40 overflow-y-auto"></pre>
+          <span class="text-[10px] mono text-zinc-400 block mb-1">Response Proof</span>
+          <pre id="modalRes" class="mono bg-zinc-950 p-3 border border-zinc-700 text-zinc-100 overflow-x-auto max-h-40 overflow-y-auto"></pre>
         </div>
       </div>
 
-      <div class="pt-3 border-t border-zinc-800 flex items-center justify-between">
-        <span class="text-xs mono text-zinc-500">STATUS: <span class="text-red-400">CONFIRMED_VULNERABLE</span></span>
-        <button id="modalRetestBtn" onclick="triggerRetest()" class="px-3 py-1.5 text-xs mono border border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 transition">
+      <div class="pt-3 border-t border-zinc-700 flex items-center justify-between">
+        <span class="text-xs mono text-zinc-400">STATUS: <span class="text-red-400 font-bold">CONFIRMED_VULNERABLE</span></span>
+        <button id="modalRetestBtn" onclick="triggerRetest()" class="px-3 py-1.5 text-xs mono font-semibold border border-zinc-600 bg-zinc-900 text-white hover:border-white hover:shadow-[0_0_12px_rgba(255,255,255,0.4)] transition">
           RETEST_EXPLOIT
         </button>
       </div>
@@ -283,13 +285,13 @@
         if (res.ok) {
           isLiveBackend = true;
           document.getElementById('modeBadge').innerText = "LIVE_BACKEND";
-          document.getElementById('modeBadge').className = "text-[10px] px-1.5 py-0.5 border border-zinc-700 text-zinc-300 mono";
+          document.getElementById('modeBadge').className = "text-[10px] px-1.5 py-0.5 border border-zinc-600 text-zinc-200 mono";
           return true;
         }
       } catch (e) {
         isLiveBackend = false;
         document.getElementById('modeBadge').innerText = "STANDALONE_DEMO";
-        document.getElementById('modeBadge').className = "text-[10px] px-1.5 py-0.5 border border-zinc-800 text-zinc-500 mono";
+        document.getElementById('modeBadge').className = "text-[10px] px-1.5 py-0.5 border border-zinc-700 text-zinc-400 mono";
       }
       return false;
     }
@@ -343,17 +345,17 @@
       if (endpoints.length === 0) return;
 
       container.innerHTML = endpoints.map(ep => {
-        let tag = "text-zinc-400 border-zinc-800";
-        if (ep.category === 'zombie') tag = "text-amber-400 border-amber-900/60";
-        if (ep.category === 'shadow') tag = "text-red-400 border-red-900/60";
+        let tag = "text-zinc-300 border-zinc-700";
+        if (ep.category === 'zombie') tag = "text-amber-400 border-amber-800/80";
+        if (ep.category === 'shadow') tag = "text-red-400 border-red-800/80";
 
         return `
-          <div class="flex items-center justify-between p-2 border border-zinc-900 bg-black hover:border-zinc-800 transition">
+          <div class="flex items-center justify-between p-2 border border-zinc-800 bg-black hover:border-zinc-600 transition">
             <div class="flex items-center gap-2 overflow-hidden mono">
-              <span class="text-[10px] text-zinc-500 font-bold">${ep.method}</span>
-              <span class="text-zinc-300 truncate text-[11px]">${ep.path}</span>
+              <span class="text-[10px] text-zinc-400 font-bold">${ep.method}</span>
+              <span class="text-zinc-200 truncate text-[11px]">${ep.path}</span>
             </div>
-            <span class="text-[9px] uppercase px-1.5 py-0.2 border ${tag} mono">
+            <span class="text-[9px] uppercase px-1.5 py-0.5 border ${tag} mono font-semibold">
               ${ep.category}
             </span>
           </div>
@@ -368,20 +370,20 @@
 
       container.innerHTML = findings.map(f => {
         const isCrit = f.severity === 'CRITICAL';
-        const badgeColor = isCrit ? 'text-red-400 border-red-900/80 bg-red-950/20' : 'text-amber-400 border-amber-900/80 bg-amber-950/20';
+        const badgeColor = isCrit ? 'text-red-400 border-red-700 bg-red-950/30' : 'text-amber-400 border-amber-700 bg-amber-950/30';
 
         return `
-          <div onclick="openModal(${f.id})" class="p-3 border border-zinc-800/80 bg-black hover:border-zinc-600 cursor-pointer transition">
+          <div onclick="openModal(${f.id})" class="p-3 border border-zinc-700 bg-black hover:border-white cursor-pointer transition shadow-sm">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <div class="flex items-center gap-2 mb-1 mono">
-                  <span class="px-1.5 py-0.2 text-[9px] font-bold border ${badgeColor}">${f.severity}</span>
-                  <span class="text-[11px] text-zinc-500">${f.method} ${f.endpoint}</span>
+                  <span class="px-1.5 py-0.5 text-[9px] font-bold border ${badgeColor}">${f.severity}</span>
+                  <span class="text-[11px] text-zinc-400">${f.method} ${f.endpoint}</span>
                 </div>
-                <h5 class="text-xs font-semibold text-zinc-100 hover:text-white">${f.title}</h5>
-                <p class="text-[11px] text-zinc-500 mt-1 line-clamp-2">${f.description}</p>
+                <h5 class="text-xs font-semibold text-white hover:text-zinc-200">${f.title}</h5>
+                <p class="text-[11px] text-zinc-400 mt-1 line-clamp-2">${f.description}</p>
               </div>
-              <span class="text-zinc-600 hover:text-zinc-300 text-xs mono">-></span>
+              <span class="text-zinc-400 hover:text-white text-xs mono font-bold">-></span>
             </div>
           </div>
         `;
@@ -393,9 +395,9 @@
       if (logs.length === 0) return;
       container.innerHTML = logs.slice(0, 30).map(l => `
         <div>
-          <span class="text-zinc-600">[${l.agent}]</span>
-          <span class="text-zinc-300">${l.action}</span>:
-          <span class="text-zinc-500">${l.details}</span>
+          <span class="text-zinc-500">[${l.agent}]</span>
+          <span class="text-zinc-200">${l.action}</span>:
+          <span class="text-zinc-400">${l.details}</span>
         </div>
       `).join('');
     }
@@ -435,7 +437,7 @@
           if (index < simulatedLogs.length) {
             const l = simulatedLogs[index];
             const div = document.createElement('div');
-            div.innerHTML = `<span class="text-zinc-600">[${l.agent}]</span> <span class="text-zinc-300">${l.action}</span>: <span class="text-zinc-500">${l.details}</span>`;
+            div.innerHTML = `<span class="text-zinc-500">[${l.agent}]</span> <span class="text-zinc-200">${l.action}</span>: <span class="text-zinc-400">${l.details}</span>`;
             terminal.appendChild(div);
             terminal.scrollTop = terminal.scrollHeight;
             index++;
@@ -457,7 +459,7 @@
       currentFindingId = f.id;
 
       document.getElementById('modalSeverity').innerText = f.severity;
-      document.getElementById('modalSeverity').className = `px-2 py-0.5 text-[10px] font-bold mono border ${f.severity === 'CRITICAL' ? 'text-red-400 border-red-900 bg-red-950/20' : 'text-amber-400 border-amber-900 bg-amber-950/20'}`;
+      document.getElementById('modalSeverity').className = `px-2 py-0.5 text-[10px] font-bold mono border ${f.severity === 'CRITICAL' ? 'text-red-400 border-red-600 bg-red-950/30' : 'text-amber-400 border-amber-600 bg-amber-950/30'}`;
       document.getElementById('modalTitle').innerText = f.title;
       document.getElementById('modalEndpoint').innerText = `${f.method} ${f.endpoint}`;
       document.getElementById('modalDesc').innerText = f.description;
