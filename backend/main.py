@@ -13,6 +13,7 @@ from agents.executor import ExploitExecutor
 from agents.verifier import VerifierAgent
 from agents.safety import SafetyGuard
 from recon.openapi_gen import generate_openapi_spec
+from recon.har_parser import parse_har_traffic
 
 app = FastAPI(title="RouteZero DAST Core API", version="1.0.0")
 global_safety_guard = SafetyGuard()
@@ -128,6 +129,19 @@ def retest_finding(finding_id: int):
         "status": "RETEST_COMPLETED",
         "result": "STILL_VULNERABLE",
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+@app.post("/api/recon/upload-har")
+def upload_har(payload: dict):
+    endpoints = parse_har_traffic(payload)
+    for ep in endpoints:
+        save_endpoint(ep["path"], ep["method"], ep["category"], ep["params"])
+        log_activity("TrafficParser", "HAR_ROUTE_INGESTED", f"{ep['method']} {ep['path']} [{ep['category'].upper()}]")
+    
+    return {
+        "status": "success",
+        "endpoints_ingested": len(endpoints),
+        "message": f"Successfully parsed {len(endpoints)} routes from HAR traffic log."
     }
 
 @app.get("/api/export/openapi.json")

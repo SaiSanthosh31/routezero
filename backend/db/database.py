@@ -28,10 +28,14 @@ def init_db():
         title TEXT NOT NULL,
         severity TEXT NOT NULL, -- CRITICAL, HIGH, MEDIUM, LOW
         vuln_type TEXT NOT NULL,
+        cwe_id TEXT DEFAULT '',
+        owner TEXT DEFAULT '@tbo-security',
         endpoint TEXT NOT NULL,
         method TEXT NOT NULL,
         description TEXT NOT NULL,
         business_impact TEXT NOT NULL,
+        remediation TEXT DEFAULT '',
+        remediation_code TEXT DEFAULT '',
         reproduction_curl TEXT NOT NULL,
         proof_request TEXT NOT NULL,
         proof_response TEXT NOT NULL,
@@ -75,16 +79,20 @@ def save_finding(finding: dict):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-    INSERT INTO findings (title, severity, vuln_type, endpoint, method, description, business_impact, reproduction_curl, proof_request, proof_response, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO findings (title, severity, vuln_type, cwe_id, owner, endpoint, method, description, business_impact, remediation, remediation_code, reproduction_curl, proof_request, proof_response, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         finding["title"],
         finding["severity"],
         finding["vuln_type"],
+        finding.get("cwe_id", ""),
+        finding.get("owner", "@tbo-security"),
         finding["endpoint"],
         finding["method"],
         finding["description"],
         finding["business_impact"],
+        finding.get("remediation", ""),
+        finding.get("remediation_code", ""),
         finding["reproduction_curl"],
         finding["proof_request"],
         finding["proof_response"],

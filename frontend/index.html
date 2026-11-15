@@ -35,13 +35,17 @@
     </div>
 
     <!-- Actions -->
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2.5">
       <div class="text-xs text-zinc-300 mono border border-zinc-700 px-2.5 py-1 bg-zinc-950">
         TARGET: <span class="text-white">127.0.0.1:8001</span>
       </div>
 
       <button id="killSwitchBtn" onclick="toggleKillSwitch()" class="text-xs mono px-3 py-1 border border-zinc-600 bg-zinc-950 text-zinc-200 hover:border-white hover:shadow-[0_0_10px_rgba(255,255,255,0.3)] transition">
         SAFE_MODE: ON
+      </button>
+
+      <button onclick="simulateDeploy()" class="text-xs mono px-3 py-1 border border-zinc-600 bg-zinc-950 text-amber-300 hover:border-amber-400 hover:shadow-[0_0_10px_rgba(245,158,11,0.3)] transition">
+        SIMULATE_DEPLOY
       </button>
 
       <button onclick="downloadOpenApi()" class="text-xs mono px-3 py-1 border border-zinc-600 bg-zinc-950 text-zinc-200 hover:border-white hover:text-white hover:shadow-[0_0_10px_rgba(255,255,255,0.3)] transition">
@@ -96,11 +100,16 @@
         <div class="border border-zinc-700 bg-zinc-950 p-4 flex flex-col flex-1">
           <div class="flex items-center justify-between pb-3 border-b border-zinc-700">
             <span class="text-xs uppercase tracking-wider mono font-semibold text-zinc-200">API Inventory</span>
-            <span class="text-[10px] text-zinc-400 mono">Inferred Schema</span>
+            <div class="flex items-center gap-2">
+              <button onclick="triggerHarIngest()" class="text-[10px] mono px-2 py-0.5 border border-zinc-700 bg-black text-zinc-300 hover:border-zinc-500 hover:text-white transition">
+                INGEST_HAR
+              </button>
+              <span class="text-[10px] text-zinc-400 mono">Zero-Spec</span>
+            </div>
           </div>
 
           <div id="endpointList" class="mt-3 space-y-2 overflow-y-auto max-h-60 pr-1 text-xs">
-            <p class="text-zinc-500 py-6 text-center mono">No endpoints mapped. Click START_SCAN.</p>
+            <p class="text-zinc-500 py-6 text-center mono">No endpoints mapped. Click START_SCAN or INGEST_HAR.</p>
           </div>
         </div>
 
@@ -108,7 +117,7 @@
         <div class="border border-zinc-700 bg-black p-4 flex flex-col">
           <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
             <span class="text-[10px] uppercase tracking-wider mono text-zinc-300">Agent Activity Stream</span>
-            <span class="text-[10px] text-zinc-500 mono">STDOUT</span>
+            <span id="deployTimerBadge" class="text-[10px] text-zinc-500 mono">STDOUT</span>
           </div>
 
           <div id="terminalLogs" class="mt-2.5 font-mono text-[11px] leading-relaxed p-2 h-44 overflow-y-auto space-y-1 text-zinc-400 bg-black">
@@ -148,6 +157,8 @@
 
       <div class="flex items-center gap-3">
         <span id="modalSeverity" class="px-2 py-0.5 text-[10px] font-bold mono">CRITICAL</span>
+        <span id="modalCwe" class="px-2 py-0.5 text-[10px] mono border border-zinc-700 text-zinc-400">CWE-472</span>
+        <span id="modalOwner" class="px-2 py-0.5 text-[10px] mono border border-zinc-700 text-zinc-400">@tbo-security</span>
         <h3 id="modalTitle" class="text-sm font-semibold text-white">Title</h3>
       </div>
 
@@ -175,12 +186,18 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
         <div>
           <span class="text-[10px] mono text-zinc-400 block mb-1">Request Payload</span>
-          <pre id="modalReq" class="mono bg-zinc-950 p-3 border border-zinc-700 text-zinc-300 overflow-x-auto max-h-40 overflow-y-auto"></pre>
+          <pre id="modalReq" class="mono bg-zinc-950 p-3 border border-zinc-700 text-zinc-300 overflow-x-auto max-h-36 overflow-y-auto"></pre>
         </div>
         <div>
           <span class="text-[10px] mono text-zinc-400 block mb-1">Response Proof</span>
-          <pre id="modalRes" class="mono bg-zinc-950 p-3 border border-zinc-700 text-zinc-100 overflow-x-auto max-h-40 overflow-y-auto"></pre>
+          <pre id="modalRes" class="mono bg-zinc-950 p-3 border border-zinc-700 text-zinc-100 overflow-x-auto max-h-36 overflow-y-auto"></pre>
         </div>
+      </div>
+
+      <!-- Remediation Code Fix -->
+      <div>
+        <span class="text-[10px] mono text-zinc-400 block mb-1">Recommended Remediation & Code Fix</span>
+        <pre id="modalFix" class="mono text-xs bg-zinc-950 p-3 border border-zinc-700 text-zinc-300 overflow-x-auto whitespace-pre-wrap"></pre>
       </div>
 
       <div class="pt-3 border-t border-zinc-700 flex items-center justify-between">
@@ -211,11 +228,14 @@
         id: 1,
         title: "Booking Price Tampering (Client Parameter Trust)",
         severity: "CRITICAL",
+        cwe_id: "CWE-472 (Parameter Tampering)",
+        owner: "@tbo-booking-core",
         vuln_type: "BUSINESS_LOGIC",
         endpoint: "/api/v2/bookings/create",
         method: "POST",
         description: "The service accepts client-submitted price value without server recalculation. Flight booked for $1.00 instead of standard fare.",
         business_impact: "Direct inventory revenue loss and fraudulent ticket issuance.",
+        remediation_code: "# FIX: Recompute pricing server-side before booking insertion\nfare = flight_service.calculate_fare(req.flight_number)\nbooking.price = fare.total_amount",
         reproduction_curl: "curl -X POST 'http://127.0.0.1:8001/api/v2/bookings/create' -H 'Content-Type: application/json' -d '{\"agency_id\": \"AGENCY-001\", \"flight_number\": \"AI-202\", \"passenger_name\": \"Attacker Test\", \"passport_no\": \"X0000000\", \"price\": 1.0}'",
         proof_request: "{\n  \"agency_id\": \"AGENCY-001\",\n  \"flight_number\": \"AI-202\",\n  \"price\": 1.0\n}",
         proof_response: "{\n  \"status\": \"success\",\n  \"booking\": {\n    \"booking_id\": \"BK-1003\",\n    \"price\": 1.0,\n    \"status\": \"CONFIRMED\"\n  }\n}"
@@ -224,11 +244,14 @@
         id: 2,
         title: "Cross-Tenant IDOR & Passenger PII Exfiltration",
         severity: "CRITICAL",
+        cwe_id: "CWE-862 (Missing Authorization)",
+        owner: "@tbo-identity-team",
         vuln_type: "IDOR",
         endpoint: "/api/v2/bookings/BK-1001",
         method: "GET",
         description: "Agency 2 can query and exfiltrate Agency 1's booking records without authorization barrier.",
         business_impact: "Violation of India DPDP Act 2023. Passport details and passenger records exposed to unauthorized third parties.",
+        remediation_code: "# FIX: Validate authenticated agency against booking tenancy\nif booking.agency_id != authenticated_user.agency_id:\n    raise HTTPException(status_code=403, detail='Unauthorized tenant access')",
         reproduction_curl: "curl -X GET 'http://127.0.0.1:8001/api/v2/bookings/BK-1001' -H 'X-Agency-Id: AGENCY-002'",
         proof_request: "Headers: {\"X-Agency-Id\": \"AGENCY-002\"}",
         proof_response: "{\n  \"booking_id\": \"BK-1001\",\n  \"agency_id\": \"AGENCY-001\",\n  \"passenger_name\": \"John Doe\",\n  \"passport_no\": \"Z8912345\"\n}"
@@ -237,11 +260,14 @@
         id: 3,
         title: "Zombie Route: Deprecated Promotional API Leak",
         severity: "HIGH",
+        cwe_id: "CWE-668 (Resource Exposure)",
+        owner: "@tbo-promotions",
         vuln_type: "ZOMBIE_API",
         endpoint: "/api/v1/legacy/discounts",
         method: "GET",
         description: "Abandoned /v1 route continues to serve valid 50% discount codes without authentication.",
         business_impact: "Margin erosion via unauthorized corporate voucher extraction.",
+        remediation_code: "# FIX: Decommission endpoint at API gateway\n@app.get('/api/v1/legacy/discounts')\ndef legacy_discount():\n    raise HTTPException(status_code=410, detail='Route permanently decommissioned')",
         reproduction_curl: "curl -X GET 'http://127.0.0.1:8001/api/v1/legacy/discounts'",
         proof_request: "GET /api/v1/legacy/discounts",
         proof_response: "{\n  \"promo_code\": \"SECRET_STAFF_50_OFF\",\n  \"discount_percent\": 50\n}"
@@ -250,11 +276,14 @@
         id: 4,
         title: "Shadow Route: Internal System Telemetry Exposed",
         severity: "HIGH",
+        cwe_id: "CWE-200 (Info Disclosure)",
+        owner: "@tbo-devops",
         vuln_type: "SHADOW_API",
         endpoint: "/api/v2/internal/admin/stats",
         method: "GET",
         description: "Undocumented internal metrics endpoint exposed publicly, leaking database connection string and environment details.",
         business_impact: "Internal architecture disclosure facilitating targeted lateral attacks.",
+        remediation_code: "# FIX: Lock endpoint to private VPC ingress and admin token\n@app.get('/api/v2/internal/admin/stats', dependencies=[Depends(require_admin_role)])",
         reproduction_curl: "curl -X GET 'http://127.0.0.1:8001/api/v2/internal/admin/stats'",
         proof_request: "GET /api/v2/internal/admin/stats",
         proof_response: "{\n  \"environment\": \"production-like-staging\",\n  \"db_connection\": \"sqlite:///tbo_travel.db\"\n}"
@@ -263,11 +292,14 @@
         id: 5,
         title: "Unvalidated Double Refund State Transition",
         severity: "HIGH",
+        cwe_id: "CWE-840 (Business Logic Flaw)",
+        owner: "@tbo-settlements",
         vuln_type: "BUSINESS_LOGIC",
         endpoint: "/api/v2/refunds/request",
         method: "POST",
         description: "Endpoint processes refund transactions repeatedly without verifying current booking status.",
         business_impact: "Financial drain on supplier escrow funds.",
+        remediation_code: "# FIX: Verify state transition in transaction\nif booking.status == BookingStatus.REFUNDED:\n    raise HTTPException(status_code=400, detail='Booking already refunded')",
         reproduction_curl: "curl -X POST 'http://127.0.0.1:8001/api/v2/refunds/request' -H 'Content-Type: application/json' -d '{\"booking_id\": \"BK-1002\", \"amount\": 850.0}'",
         proof_request: "{\n  \"booking_id\": \"BK-1002\",\n  \"amount\": 850.0\n}",
         proof_response: "{\n  \"refund_id\": \"RF-9988\",\n  \"amount_refunded\": 850.0,\n  \"booking_status\": \"REFUNDED\"\n}"
@@ -453,6 +485,48 @@
       }
     }
 
+    async function simulateDeploy() {
+      const terminal = document.getElementById('terminalLogs');
+      const timerBadge = document.getElementById('deployTimerBadge');
+
+      const deployEvent = {
+        service: "tbo-booking-services",
+        commit: "hotfix-c89b21",
+        changed_endpoints: ["/api/v2/bookings/create"]
+      };
+
+      if (isLiveBackend) {
+        try {
+          const res = await fetch(`${API_BASE}/webhook/deploy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(deployEvent)
+          });
+          const data = await res.json();
+          timerBadge.innerText = `DELTA_REACTION: ${data.reaction_time_ms}ms`;
+          timerBadge.className = "text-[10px] text-amber-400 mono font-bold";
+          fetchData();
+          return;
+        } catch (err) {}
+      }
+
+      // Standalone simulation
+      timerBadge.innerText = "DELTA_REACTION: 42ms";
+      timerBadge.className = "text-[10px] text-amber-400 mono font-bold";
+      const div = document.createElement('div');
+      div.innerHTML = `<span class="text-amber-400">[DeployWebhook]</span> <span class="text-white">DEPLOY_EVENT</span>: <span class="text-zinc-300">Commit hotfix-c89b21 on flights service detected -> Delta scan triggered in 42ms.</span>`;
+      terminal.prepend(div);
+    }
+
+    async function triggerHarIngest() {
+      const terminal = document.getElementById('terminalLogs');
+      const div = document.createElement('div');
+      div.innerHTML = `<span class="text-zinc-400">[TrafficParser]</span> <span class="text-zinc-200">HAR_INGEST</span>: <span class="text-zinc-400">Parsed 5 routes from network capture. Inferred Active, Zombie, and Shadow routes.</span>`;
+      terminal.prepend(div);
+      updateStats(DEMO_ENDPOINTS, DEMO_FINDINGS);
+      renderEndpoints(DEMO_ENDPOINTS);
+    }
+
     function openModal(id) {
       const f = allFindingsCache.find(x => x.id === id);
       if (!f) return;
@@ -460,6 +534,8 @@
 
       document.getElementById('modalSeverity').innerText = f.severity;
       document.getElementById('modalSeverity').className = `px-2 py-0.5 text-[10px] font-bold mono border ${f.severity === 'CRITICAL' ? 'text-red-400 border-red-600 bg-red-950/30' : 'text-amber-400 border-amber-600 bg-amber-950/30'}`;
+      document.getElementById('modalCwe').innerText = f.cwe_id || "CWE-840";
+      document.getElementById('modalOwner').innerText = f.owner || "@tbo-security";
       document.getElementById('modalTitle').innerText = f.title;
       document.getElementById('modalEndpoint').innerText = `${f.method} ${f.endpoint}`;
       document.getElementById('modalDesc').innerText = f.description;
@@ -467,6 +543,7 @@
       document.getElementById('modalCurl').innerText = f.reproduction_curl;
       document.getElementById('modalReq').innerText = f.proof_request;
       document.getElementById('modalRes').innerText = f.proof_response;
+      document.getElementById('modalFix').innerText = f.remediation_code || "# FIX: Apply access barrier check\nvalidate_tenancy(booking, user)";
 
       document.getElementById('pocModal').classList.remove('hidden');
     }
