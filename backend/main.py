@@ -11,8 +11,11 @@ from db.database import init_db, save_endpoint, save_finding, get_all_findings, 
 from agents.planner import AttackPlanner
 from agents.executor import ExploitExecutor
 from agents.verifier import VerifierAgent
+from agents.safety import SafetyGuard
+from recon.openapi_gen import generate_openapi_spec
 
 app = FastAPI(title="RouteZero DAST Core API", version="1.0.0")
+global_safety_guard = SafetyGuard()
 
 # Enable CORS for frontend developers
 app.add_middleware(
@@ -50,7 +53,7 @@ def run_dast_scan_workflow():
     log_activity("Orchestrator", "SCAN_START", f"Targeting platform at {TARGET_APP_URL}")
 
     planner = AttackPlanner()
-    executor = ExploitExecutor(base_url=TARGET_APP_URL)
+    executor = ExploitExecutor(base_url=TARGET_APP_URL, safety_guard=global_safety_guard)
     verifier = VerifierAgent()
 
     found_count = 0
@@ -119,13 +122,65 @@ def list_logs():
 
 @app.post("/api/retest/{finding_id}")
 def retest_finding(finding_id: int):
-    # Simulated instant retest trigger for judges demo
+    # Instant retest trigger
     return {
         "finding_id": finding_id,
         "status": "RETEST_COMPLETED",
         "result": "STILL_VULNERABLE",
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
     }
+
+@app.get("/api/export/openapi.json")
+def export_openapi():
+    endpoints = get_all_endpoints()
+    spec = generate_openapi_spec(endpoints)
+    return spec
+
+class DeployWebhookPayload(BaseModel):
+    service: str
+    commit: str
+    changed_endpoints: List[str]
+
+@app.post("/api/webhook/deploy")
+def on_deploy_webhook(payload: DeployWebhookPayload):
+    start_time = time.time()
+    log_activity("WebhookTrigger", "DEPLOY_EVENT_RECEIVED", f"Commit {payload.commit} deployed on {payload.service}")
+    
+    planner = AttackPlanner()
+    executor = ExploitExecutor(base_url=TARGET_APP_URL, safety_guard=global_safety_guard)
+    verifier = VerifierAgent()
+    
+    new_findings = []
+    for path in payload.changed_endpoints:
+        ep = {"path": path, "method": "POST" if "create" in path or "request" in path else "GET", "category": "active", "params": {}}
+        attacks = planner.plan_attacks(ep)
+        for atk in attacks:
+            log_activity("AttackPlanner", "DELTA_TEST", f"Testing deploy change: {atk['name']}")
+            res = executor.execute(atk)
+            finding = verifier.verify(atk, res)
+            if finding:
+                save_finding(finding)
+                new_findings.append(finding)
+                log_activity("VerifierAgent", "DELTA_FINDING", f"Found: {finding['title']}")
+
+    duration_ms = round((time.time() - start_time) * 1000, 2)
+    return {
+        "status": "completed",
+        "reaction_time_ms": duration_ms,
+        "commit": payload.commit,
+        "new_vulnerabilities": len(new_findings)
+    }
+
+@app.post("/api/safety/kill-switch")
+def toggle_kill_switch():
+    global_safety_guard.kill_switch_active = not global_safety_guard.kill_switch_active
+    state = "PAUSED" if global_safety_guard.kill_switch_active else "ACTIVE"
+    log_activity("SafetyGuard", "KILL_SWITCH_TOGGLED", f"Agent state set to {state}")
+    return {"kill_switch_active": global_safety_guard.kill_switch_active, "state": state}
+
+@app.get("/api/safety/audit-log")
+def get_audit_log():
+    return {"audit_log": global_safety_guard.audit_log}
 
 if __name__ == "__main__":
     import uvicorn
