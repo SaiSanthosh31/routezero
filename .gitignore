@@ -11,6 +11,11 @@ __MACOSX/
 *.pem
 *.key
 
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
 # Dependencies
 node_modules/
 venv/
