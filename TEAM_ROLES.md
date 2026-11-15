@@ -36,7 +36,7 @@ TEAM ROLES
 - Visual API map: clean interactive tree showing all endpoints (active, zombie, shadow).
 - Vulnerability modal: clicking a bug shows the exact HTTP request, response proof, and a Retest button.
 
-5. Ghost Guy (Mock Data & Pitch)
+5. @ravi (Mock Data & Pitch)
 - Generate fake travel traffic and sample booking JSONs.
 - Prepare the demo script and slides for the judges.
 
