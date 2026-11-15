@@ -1,51 +1,75 @@
 # VoyageHack 4.0 — Track 4: Agentic Real-Time DAST
-## Team Execution Plan & Role Assignments (5 Members)
+## Team Execution Plan & Role Assignments
 
-### 📌 Project Vision: **WatchDog DAST (Autonomous Travel API AppSec Agent)**
-An autonomous security testing agent that continuously monitors B2B travel APIs, auto-maps active/zombie/shadow endpoints without documentation, safely executes targeted business-logic attacks (IDOR, price tampering, auth bypass), and generates instant verified vulnerability reports with reproduction proofs.
-
----
-
-### 👥 Team Member Roles & Responsibilities
-
-#### 1. Lead Backend & Agent Engine (You - Tech Lead)
-* **What you build:**
-  * **Agent Orchestrator & Attack Planner:** Uses an LLM (Gemini / Claude / local) to analyze discovered endpoints and decide intelligent business-logic attack strategies (e.g. IDOR, price/markup tampering, coupon reuse, role escalation).
-  * **Exploit Executor & Safety Guard:** Safely executes the payloads with rate-limiting, scope checks, and safe test credentials.
-  * **Verifier & Triage Agent:** Confirms whether an attack succeeded, eliminates false positives, and generates reproduction proofs (curl scripts + business impact score).
-
-#### 2. Backend & Fullstack Co-Developer (Backend + Integrations)
-* **What you build:**
-  * **Recon & Traffic Sniffer:** Ingests traffic logs/HAR files or crawls the app to infer the API schema without Swagger/OpenAPI.
-  * **Zombie & Shadow API Engine:** Flags endpoints that are live but unused (Zombie) or active in traffic but undocumented (Shadow).
-  * **Backend API & Database:** Stores findings, endpoints, and audit logs (FastAPI/Express + SQLite/Postgres), and provides REST/WebSocket endpoints for the frontend.
-
-#### 3. Frontend Lead 1 (Security Command Center & Ops Dashboard)
-* **What you build:**
-  * **Main Dashboard:** High-level metrics (Total endpoints scanned, Active vs Zombie vs Shadow count, Critical/High vulnerabilities found).
-  * **Live Activity Feed:** Real-time log showing the agent discovering endpoints, testing attacks, and flagging issues.
-  * **Safety Controls & Human Review:** Kill-switch toggle, rate-limit slider, and a modal for human approval on high-risk tests.
-
-#### 4. Frontend Lead 2 (API Knowledge Graph & Exploit PoC Inspector)
-* **What you build:**
-  * **Visual API Topology Graph:** Interactive visual tree/graph showing all discovered routes color-coded by status (Green = Active, Yellow = Zombie, Red = Shadow / Vulnerable).
-  * **Vulnerability Details & PoC Viewer:** Clean ticket modal showing vulnerability description, business risk, affected endpoint, and side-by-side HTTP request/response proofs with a 1-click "Retest" button.
-
-#### 5. Target App & Red Team Demo Lead (The 5th Member)
-* **Why this role is crucial:** Judges need to see the agent attack a *real, working app* live on screen.
-* **What you build:**
-  * **Vulnerable B2B Travel Target API:** A lightweight mock travel service with 4-5 key endpoints:
-    * Search Flights/Hotels (`/api/v2/search`)
-    * Booking & Pricing (`/api/v2/bookings` with a price parameter that can be manipulated)
-    * View Booking (`/api/v2/bookings/{id}` vulnerable to IDOR across agencies)
-    * Zombie Endpoint (`/api/v1/legacy-discount` that still gives unauthorized 50% discounts)
-    * Shadow Endpoint (`/api/v2/internal/admin-payouts` accidentally exposed)
-  * **Demo Flow & Presentation:** Owns the 3-minute hackathon demo script that proves to judges how the agent catches newly deployed bugs in real time.
+### 👥 Team Roster & Tasks
 
 ---
 
-### 🚀 Recommended Tech Stack
-* **Agent Core & Backend:** Python (FastAPI + LangChain / LiteLLM / Requests)
-* **Frontend:** React / Next.js + Tailwind CSS + Lucide Icons + React Flow (for API graph)
-* **Target Vulnerable App:** Python (FastAPI) or Node.js (Express)
-* **Database:** SQLite (fastest for hackathons) or PostgreSQL
+#### 1. @S4NTY3119 (You - Lead Backend & AI Agent Engine)
+* **Status:** Active (Core Owner)
+* **What you own:**
+  * **LLM Attack Planner:** Uses Gemini / LLM to inspect discovered endpoints and plan targeted business-logic exploits (IDOR, price tampering, coupon reuse, role escalation).
+  * **Exploit Executor & Safety Engine:** Safely executes the payloads with rate-limiting, scope checks, and safe test credentials.
+  * **Verifier & Triage:** Confirms successful exploits with reproducible proof (curl + HTTP response snippets) and assigns business risk severity scores.
+  * REST API endpoints that trigger agent runs and return scan status.
+
+---
+
+#### 2. @dharanii-07 (Backend & Recon / API Data Engine)
+* **Status:** Active
+* **What he owns:**
+  * **Recon & Endpoint Discovery:** Scans/crawls target web app and parses traffic logs (HAR files) to infer endpoints, query params, and request bodies without Swagger.
+  * **Zombie & Shadow API Engine:** Compares inferred routes against traffic history to label endpoints as `Active`, `Zombie` (old, uncalled), or `Shadow` (called but unmapped).
+  * **Database & Persistence:** Stores discovered endpoints, vulnerability tickets, and audit logs (FastAPI + SQLite/Postgres).
+
+---
+
+#### 3. @arun-hitesh (Frontend 1 - SOC Command Center & Live Feed)
+* **Status:** Active
+* **What he owns:**
+  * **Main Security Dashboard:** High-level stat cards (Total endpoints scanned, Zombie/Shadow count, Critical/High vulnerabilities).
+  * **Live Agent Activity Stream:** Terminal-like or event-card stream showing the AI agent actively discovering routes, launching tests, and reporting findings in real-time.
+  * **Safety Controls:** Emergency Kill Switch toggle, rate-limiting slider, and human approval modal for high-risk exploits.
+
+---
+
+#### 4. Frontend Teammate 2 (Frontend 2 - API Topology & Exploit Inspector)
+* **Status:** Active
+* **What he owns:**
+  * **Interactive API Topology Map:** Visual graph / tree showing all discovered endpoints color-coded (Green = Active, Yellow = Zombie, Red = Shadow / Vulnerable).
+  * **Vulnerability Ticket & PoC Inspector:** Click into any finding to see:
+    * Vulnerability title, severity badge, and business impact description.
+    * Side-by-side HTTP Request (with malicious payload) and Response proof.
+    * 1-Click **"Retest"** button to rerun the verification.
+
+---
+
+#### 5. Teammate 5 (Backup / Easy Task: Seed Data & Target Scenarios)
+* **Status:** Low-dependency (Can't block the team)
+* **What he owns:**
+  * **Sample Data & Presentation:**
+    * Create sample travel booking JSON payloads and realistic HAR/traffic log files.
+    * Test the target app manually to verify standard user flows.
+    * Help put together the 5-minute demo script & slide deck.
+  *(Note: If he doesn't show up, backend can auto-generate the mock data in 5 minutes!)*
+
+---
+
+### 📂 Repository Structure
+
+```text
+├── backend/
+│   ├── agents/          # LLM Attack Planner, Exploit Executor, Verifier (@S4NTY3119)
+│   ├── recon/           # Traffic sniffer & Zombie/Shadow detector (@dharanii-07)
+│   ├── db/              # Models, SQLite storage & repository (@dharanii-07)
+│   ├── routes/          # REST API & WebSockets for frontend (@S4NTY3119 & @dharanii-07)
+│   └── main.py          # FastAPI app entrypoint
+├── target-app/          # Mock vulnerable B2B travel portal for testing
+├── frontend/            # Next.js / React + Tailwind CSS (@arun-hitesh & Teammate 2)
+│   ├── components/      # LiveFeed, StatCards, ApiGraph, VulnModal
+│   └── pages/
+├── data/                # Sample HAR logs, seed travel datasets (Teammate 5)
+├── TEAM_ROLES.md
+└── README.md
+```
+
