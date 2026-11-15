@@ -16,7 +16,7 @@ We are building an autonomous security agent for TBO travel APIs:
 
 TEAM ROLES
 
-1. @S4NTY3119 (Backend & AI Lead)
+1. @SaiSanthosh31 (Backend & AI Lead)
 - Build the LLM attack planner: give endpoints to the LLM to figure out smart business logic exploits.
 - Build the exploit runner: safely fire the attack payloads with rate limiting.
 - Build the verifier: confirm if the exploit succeeded and score the severity.
