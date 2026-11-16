@@ -1,6 +1,7 @@
 import json
 import re
 import urllib.parse
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional, Union, Set
 
 STATIC_EXTENSIONS: Set[str] = {
@@ -24,6 +25,29 @@ UUID_REGEX = re.compile(
 )
 PREFIXED_ID_REGEX = re.compile(r"^[A-Za-z]{2,}-\d+$")
 NUMERIC_ID_REGEX = re.compile(r"^\d+$")
+
+
+def parse_har_timestamp(ts_str: Optional[str]) -> Optional[str]:
+    """Parses HAR ISO 8601 timestamps into normalized UTC string 'YYYY-MM-DD HH:MM:SS'."""
+    if not ts_str or not isinstance(ts_str, str):
+        return None
+    ts_clean = ts_str.strip()
+    fmts = [
+        "%Y-%m-%dT%H:%M:%S.%f%z",
+        "%Y-%m-%dT%H:%M:%S%z",
+        "%Y-%m-%dT%H:%M:%S.%fZ",
+        "%Y-%m-%dT%H:%M:%SZ",
+        "%Y-%m-%d %H:%M:%S",
+    ]
+    for fmt in fmts:
+        try:
+            dt = datetime.strptime(ts_clean, fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        except Exception:
+            continue
+    return ts_clean
 
 
 def is_static_asset(path: str) -> bool:
@@ -254,11 +278,14 @@ class HARParser:
             req_headers = request.get("headers", [])
             sanitized_headers = sanitize_headers(req_headers) if isinstance(req_headers, list) else []
 
-            # 4. Extract response metadata
+            # 4. Extract response metadata and timestamps
             response = entry.get("response", {})
             status_code = response.get("status") if isinstance(response, dict) else None
             response_headers = response.get("headers", []) if isinstance(response, dict) else []
             sanitized_resp_headers = sanitize_headers(response_headers) if isinstance(response_headers, list) else []
+
+            entry_ts_raw = entry.get("startedDateTime")
+            entry_ts = parse_har_timestamp(entry_ts_raw)
 
             key = (method, normalized_path)
             valid_entries += 1
@@ -272,7 +299,9 @@ class HARParser:
                     "response_status": status_code,
                     "response_headers": sanitized_resp_headers,
                     "sample_url": raw_url,
-                    "occurrences": 1
+                    "occurrences": 1,
+                    "first_seen": entry_ts,
+                    "last_seen": entry_ts
                 }
             else:
                 # Merge newly observed parameters
@@ -280,6 +309,14 @@ class HARParser:
                     if p_key not in endpoint_map[key]["params"]:
                         endpoint_map[key]["params"][p_key] = p_val
                 endpoint_map[key]["occurrences"] += 1
+                # Track earliest first_seen and latest last_seen within HAR
+                if entry_ts:
+                    cur_first = endpoint_map[key].get("first_seen")
+                    if not cur_first or entry_ts < cur_first:
+                        endpoint_map[key]["first_seen"] = entry_ts
+                    cur_last = endpoint_map[key].get("last_seen")
+                    if not cur_last or entry_ts > cur_last:
+                        endpoint_map[key]["last_seen"] = entry_ts
 
         return {
             "endpoints": list(endpoint_map.values()),
