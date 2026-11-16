@@ -13,7 +13,8 @@ from agents.executor import ExploitExecutor
 from agents.verifier import VerifierAgent
 from agents.safety import SafetyGuard
 from recon.openapi_gen import generate_openapi_spec
-from recon.har_parser import parse_har_traffic
+from recon.har_parser import parse_har_traffic, HARParser
+from recon.discovery import APIClassifier
 
 app = FastAPI(title="RouteZero DAST Core API", version="1.0.0")
 global_safety_guard = SafetyGuard()
@@ -60,7 +61,32 @@ def run_dast_scan_workflow():
     found_count = 0
     scanned_count = 0
 
-    for ep in SEED_DISCOVERY_ENDPOINTS:
+    # Retrieve discovered endpoints from database; fallback to seed list if DB is empty
+    db_endpoints = get_all_endpoints()
+    if not db_endpoints:
+        log_activity("Orchestrator", "SEED_FALLBACK", "No endpoints in database. Seeding baseline endpoints.")
+        for ep in SEED_DISCOVERY_ENDPOINTS:
+            save_endpoint(ep["path"], ep["method"], ep["category"], ep["params"])
+        db_endpoints = get_all_endpoints()
+
+    # Deduplicate endpoints by (method, path) to prevent redundant scanning
+    seen = set()
+    endpoints_to_scan = []
+    for ep in db_endpoints:
+        key = (ep["method"].upper(), ep["path"])
+        if key not in seen:
+            seen.add(key)
+            params = ep.get("params")
+            if isinstance(params, str):
+                try:
+                    params = json.loads(params)
+                except Exception:
+                    params = {}
+            ep_dict = dict(ep)
+            ep_dict["params"] = params
+            endpoints_to_scan.append(ep_dict)
+
+    for ep in endpoints_to_scan:
         scanned_count += 1
         save_endpoint(ep["path"], ep["method"], ep["category"], ep["params"])
         log_activity("ReconAgent", "ENDPOINT_MAPPED", f"{ep['method']} {ep['path']} [{ep['category'].upper()}]")
@@ -138,15 +164,52 @@ def retest_finding(finding_id: int):
 
 @app.post("/api/recon/upload-har")
 def upload_har(payload: dict):
-    endpoints = parse_har_traffic(payload)
-    for ep in endpoints:
+    # Handle wrapped or direct HAR payload
+    har_data = payload.get("har_data", payload)
+    if not isinstance(har_data, dict):
+        har_data = {}
+    if "log" not in har_data and "entries" in har_data:
+        har_data = {"log": {"entries": har_data["entries"]}}
+
+    parser = HARParser()
+    parse_result = parser.parse(har_data)
+
+    # Documented registry and deprecated inventory comparison for shadow/zombie classification
+    doc_registry = payload.get("documented_registry", [
+        {"path": "/api/v2/flights/search", "method": "GET"},
+        {"path": "/api/v2/bookings/create", "method": "POST"},
+        {"path": "/api/v2/bookings/{booking_id}", "method": "GET"},
+        {"path": "/api/v2/refunds/request", "method": "POST"},
+    ])
+    dep_inventory = payload.get("deprecated_inventory", [
+        {"path": "/api/v1/legacy/discounts", "method": "GET"},
+    ])
+
+    classifier = APIClassifier(
+        documented_registry=doc_registry,
+        deprecated_inventory=dep_inventory
+    )
+    classified_endpoints = classifier.batch_classify(parse_result.get("endpoints", []))
+
+    for ep in classified_endpoints:
         save_endpoint(ep["path"], ep["method"], ep["category"], ep["params"])
-        log_activity("TrafficParser", "HAR_ROUTE_INGESTED", f"{ep['method']} {ep['path']} [{ep['category'].upper()}]")
-    
+
+    log_activity(
+        "ReconAgent",
+        "HAR_INGESTED",
+        f"Processed {parse_result.get('total_entries', 0)} entries; Discovered {len(classified_endpoints)} API endpoints "
+        f"({parse_result.get('skipped_static', 0)} static assets skipped)."
+    )
+
     return {
         "status": "success",
-        "endpoints_ingested": len(endpoints),
-        "message": f"Successfully parsed {len(endpoints)} routes from HAR traffic log."
+        "endpoints_ingested": len(classified_endpoints),
+        "entries_processed": parse_result.get("total_entries", 0),
+        "valid_entries": parse_result.get("valid_entries", 0),
+        "skipped_static": parse_result.get("skipped_static", 0),
+        "endpoints_discovered": len(classified_endpoints),
+        "endpoints": classified_endpoints,
+        "message": f"Successfully parsed {len(classified_endpoints)} routes from HAR traffic log."
     }
 
 @app.get("/api/export/openapi.json")
