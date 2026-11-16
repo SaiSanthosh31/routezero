@@ -91,10 +91,15 @@ def run_dast_scan_workflow():
 
 @app.get("/", response_class=HTMLResponse)
 def root():
-    html_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html"))
-    if os.path.exists(html_path):
-        with open(html_path, "r", encoding="utf-8") as f:
-            return f.read()
+    candidates = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "frontend", "index.html")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "index.html")),
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read()
     return "<h1>RouteZero Security DAST API Online</h1>"
 
 @app.get("/api/status")
@@ -183,6 +188,36 @@ def on_deploy_webhook(payload: DeployWebhookPayload):
         "reaction_time_ms": duration_ms,
         "commit": payload.commit,
         "new_vulnerabilities": len(new_findings)
+    }
+
+class RateLimitPayload(BaseModel):
+    rate_limit: Optional[float] = None
+    delay_seconds: Optional[float] = None
+
+@app.get("/api/safety/status")
+def get_safety_status():
+    delay = global_safety_guard.rate_limit_delay
+    req_per_sec = round(1.0 / max(delay, 0.01), 1) if delay > 0 else 20.0
+    return {
+        "kill_switch_active": global_safety_guard.kill_switch_active,
+        "rate_limit_delay": delay,
+        "requests_per_sec": req_per_sec,
+        "state": "PAUSED" if global_safety_guard.kill_switch_active else "ACTIVE"
+    }
+
+@app.post("/api/safety/rate-limit")
+def set_rate_limit(payload: RateLimitPayload):
+    if payload.delay_seconds is not None:
+        global_safety_guard.rate_limit_delay = max(0.01, float(payload.delay_seconds))
+    elif payload.rate_limit is not None and payload.rate_limit > 0:
+        global_safety_guard.rate_limit_delay = max(0.01, round(1.0 / float(payload.rate_limit), 3))
+    
+    req_sec = round(1.0 / max(global_safety_guard.rate_limit_delay, 0.01), 1)
+    log_activity("SafetyGuard", "RATE_LIMIT_ADJUSTED", f"Discipline updated to {req_sec} req/s ({global_safety_guard.rate_limit_delay}s delay)")
+    return {
+        "status": "updated",
+        "rate_limit_delay": global_safety_guard.rate_limit_delay,
+        "requests_per_sec": req_sec
     }
 
 @app.post("/api/safety/kill-switch")

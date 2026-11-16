@@ -17,9 +17,10 @@ def main():
     time.sleep(1.5)
 
     # 2. Start RouteZero DAST Core API & Frontend (Port 8000)
+    backend_cwd = os.path.abspath("backend") if os.path.exists("backend") else os.path.abspath(".")
     backend_cmd = [sys.executable, "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000"]
     print("-> Launching RouteZero DAST Engine on http://127.0.0.1:8000...")
-    backend_proc = subprocess.Popen(backend_cmd, cwd=os.path.abspath("backend"))
+    backend_proc = subprocess.Popen(backend_cmd, cwd=backend_cwd)
 
     time.sleep(1.5)
 
