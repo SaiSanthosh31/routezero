@@ -4,413 +4,551 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
 
-def build_template_deck():
+def build_exact_template_deck():
     prs = pptx.Presentation()
     prs.slide_width = Inches(13.333)
-    prs.slide_height = Inches(7.5) # 16:9 Widescreen
+    prs.slide_height = Inches(7.5) # 16:9 Widescreen standard
     blank_layout = prs.slide_layouts[6]
 
-    # Exact Palette from Iterate_DT_Stage0_Stage1_new.pptx:
-    COLOR_TEAL_DARK = RGBColor(18, 52, 59)      # #12343B Deep Slate/Teal
-    COLOR_CORAL     = RGBColor(240, 138, 75)   # #F08A4B Warm Coral/Orange
-    COLOR_SAGE_TEAL = RGBColor(42, 157, 143)   # #2A9D8F Sage Teal
-    COLOR_BG_LIGHT  = RGBColor(248, 250, 251)  # #F8FAFB Crisp Clean Canvas
-    COLOR_PILL_GRAY = RGBColor(238, 243, 244)  # #EEF3F4 Soft Card Surface
-    COLOR_PILL_PEACH= RGBColor(253, 235, 221)  # #FDEBDD Warm Accent Surface
-    COLOR_WHITE     = RGBColor(255, 255, 255)
-    COLOR_TEXT_DARK = RGBColor(20, 30, 35)
-    COLOR_TEXT_MUTED= RGBColor(90, 105, 115)
+    # Exact palette extracted from user reference images:
+    C_TEAL_DARK = RGBColor(18, 52, 59)      # #12343B - Dark Teal Sidebar, Header Cards
+    C_CORAL     = RGBColor(240, 138, 75)    # #F08A4B - Orange tags, dividers, root cause
+    C_SAGE_TEAL = RGBColor(42, 157, 143)    # #2A9D8F - Sage Teal pills & subheadings
+    C_LIGHT_BG  = RGBColor(255, 255, 255)   # #FFFFFF - Crisp white background
+    C_ROW_BG    = RGBColor(238, 245, 247)   # #EEF5F7 - Soft blue-gray pill rows
+    C_PEACH_BOX = RGBColor(253, 235, 221)   # #FDEBDD - Peach container for Pipeline
+    C_WHITE     = RGBColor(255, 255, 255)
+    C_TEXT_DARK = RGBColor(25, 30, 35)      # Charcoal primary text
+    C_TEXT_MUTED= RGBColor(85, 95, 105)     # Slate secondary text
 
-    def draw_bg(slide):
+    def set_white_canvas(slide):
         bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(13.333), Inches(7.5))
         bg.fill.solid()
-        bg.fill.fore_color.rgb = COLOR_BG_LIGHT
+        bg.fill.fore_color.rgb = C_LIGHT_BG
         bg.line.fill.background()
 
-    def add_rect(slide, x, y, w, h, fill_rgb, border_rgb=None, line_w=1, rounded=True):
-        shape_type = MSO_SHAPE.ROUNDED_RECTANGLE if rounded else MSO_SHAPE.RECTANGLE
-        s = slide.shapes.add_shape(shape_type, x, y, w, h)
+    def add_shape(slide, x, y, w, h, fill_rgb, rounded=True, border_rgb=None):
+        st = MSO_SHAPE.ROUNDED_RECTANGLE if rounded else MSO_SHAPE.RECTANGLE
+        s = slide.shapes.add_shape(st, x, y, w, h)
         s.fill.solid()
         s.fill.fore_color.rgb = fill_rgb
         if border_rgb:
             s.line.color.rgb = border_rgb
-            s.line.width = Pt(line_w)
+            s.line.width = Pt(1)
         else:
             s.line.fill.background()
         return s
 
+    def add_footer(slide):
+        f = slide.shapes.add_textbox(Inches(7.5), Inches(7.05), Inches(5.3), Inches(0.35))
+        p = f.text_frame.paragraphs[0]
+        p.alignment = PP_ALIGN.RIGHT
+        p.text = "ROUTEZERO  ·  VOYAGEHACK 4.0  ·  DESIGN THINKING"
+        p.font.size = Pt(9.5)
+        p.font.bold = True
+        p.font.color.rgb = C_SAGE_TEAL
+
     # ========================================================
-    # SLIDE 1: COVER SLIDE (Exact Iterate_DT Style)
+    # SLIDE 1: COVER SLIDE (Full-bleed Left Sidebar)
     # ========================================================
     s1 = prs.slides.add_slide(blank_layout)
-    draw_bg(s1)
+    set_white_canvas(s1)
 
-    # Top Teal Bar Header Card
-    add_rect(s1, Inches(1.0), Inches(1.5), Inches(11.333), Inches(4.5), COLOR_WHITE, border_rgb=COLOR_PILL_GRAY, rounded=True)
-    add_rect(s1, Inches(1.0), Inches(1.5), Inches(11.333), Inches(1.1), COLOR_TEAL_DARK, rounded=False)
+    # Full Bleed Left Dark Teal Column
+    add_shape(s1, Inches(0.0), Inches(0.0), Inches(4.5), Inches(7.5), C_TEAL_DARK, rounded=False)
 
-    # Header text
-    t_hdr = s1.shapes.add_textbox(Inches(1.3), Inches(1.65), Inches(10.7), Inches(0.8))
-    tf_h = t_hdr.text_frame
-    p_h0 = tf_h.paragraphs[0]
-    p_h0.text = "VOYAGEHACK 4.0  *  TRACK 4: AGENTIC REAL-TIME DAST"
-    p_h0.font.size = Pt(13)
-    p_h0.font.bold = True
-    p_h0.font.color.rgb = COLOR_CORAL
-    p_h0.space_after = Pt(2)
+    # Subtitle tag in Teal bar
+    t_tag1 = s1.shapes.add_textbox(Inches(0.8), Inches(1.1), Inches(3.4), Inches(0.4))
+    pt0 = t_tag1.text_frame.paragraphs[0]
+    pt0.text = "TRACK 4 · AGENTIC REAL-TIME DAST"
+    pt0.font.size = Pt(11)
+    pt0.font.bold = True
+    pt0.font.color.rgb = C_CORAL
 
-    p_h1 = tf_h.add_paragraph()
-    p_h1.text = "TBO.COM INNOVATION CHALLENGE"
-    p_h1.font.size = Pt(18)
-    p_h1.font.bold = True
-    p_h1.font.color.rgb = COLOR_WHITE
+    # Title in Teal bar
+    t_title1 = s1.shapes.add_textbox(Inches(0.8), Inches(1.7), Inches(3.4), Inches(2.2))
+    tf_t1 = t_title1.text_frame
+    tf_t1.word_wrap = True
+    p1 = tf_t1.paragraphs[0]
+    p1.text = "RouteZero"
+    p1.font.size = Pt(46)
+    p1.font.bold = True
+    p1.font.color.rgb = C_WHITE
+    p1.space_after = Pt(8)
 
-    # Main Body on Cover
-    t_body = s1.shapes.add_textbox(Inches(1.4), Inches(2.85), Inches(10.5), Inches(2.9))
-    tf_b = t_body.text_frame
-    tf_b.word_wrap = True
+    p1_sub = tf_t1.add_paragraph()
+    p1_sub.text = "Autonomous API Security Agent"
+    p1_sub.font.size = Pt(17)
+    p1_sub.font.bold = True
+    p1_sub.font.color.rgb = C_CORAL
 
-    pb0 = tf_b.paragraphs[0]
-    pb0.text = "RouteZero"
-    pb0.font.size = Pt(46)
-    pb0.font.bold = True
-    pb0.font.color.rgb = COLOR_TEAL_DARK
-    pb0.space_after = Pt(6)
+    # Orange horizontal line
+    add_shape(s1, Inches(0.8), Inches(4.2), Inches(0.8), Inches(0.06), C_CORAL, rounded=False)
 
-    pb1 = tf_b.add_paragraph()
-    pb1.text = "Autonomous Real-Time Application Security Agent for B2B Travel APIs"
-    pb1.font.size = Pt(18)
-    pb1.font.bold = True
-    pb1.font.color.rgb = COLOR_CORAL
-    pb1.space_after = Pt(14)
+    # Metric in Teal bar
+    t_stat1 = s1.shapes.add_textbox(Inches(0.8), Inches(4.5), Inches(3.4), Inches(2.2))
+    tf_s1 = t_stat1.text_frame
+    tf_s1.word_wrap = True
+    ps0 = tf_s1.paragraphs[0]
+    ps0.text = "<50ms"
+    ps0.font.size = Pt(48)
+    ps0.font.bold = True
+    ps0.font.color.rgb = C_WHITE
+    ps0.space_after = Pt(4)
 
-    pb2 = tf_b.add_paragraph()
-    pb2.text = "Chosen Problem: Hunting zero-day business-logic flaws, unmapped shadow APIs, and deprecated zombie routes across high-frequency B2B travel deployments."
-    pb2.font.size = Pt(13)
-    pb2.font.color.rgb = COLOR_TEXT_MUTED
-    pb2.space_after = Pt(18)
+    ps1 = tf_s1.add_paragraph()
+    ps1.text = "Deploy-to-attack reaction time upon git push, catching logic bugs before production release."
+    ps1.font.size = Pt(11)
+    ps1.font.color.rgb = C_ROW_BG
 
-    pb3 = tf_b.add_paragraph()
-    pb3.text = "Team: RouteZero  |  Live Demo: saisanthosh31.github.io/routezero  |  GitHub: github.com/SaiSanthosh31/routezero"
-    pb3.font.size = Pt(11.5)
-    pb3.font.bold = True
-    pb3.font.color.rgb = COLOR_TEAL_DARK
+    # Right Content Area of Cover
+    t_rc = s1.shapes.add_textbox(Inches(5.3), Inches(1.1), Inches(7.3), Inches(5.4))
+    tf_rc = t_rc.text_frame
+    tf_rc.word_wrap = True
+
+    prc0 = tf_rc.paragraphs[0]
+    prc0.text = "EXECUTIVE SUMMARY"
+    prc0.font.size = Pt(12)
+    prc0.font.bold = True
+    prc0.font.color.rgb = C_SAGE_TEAL
+    prc0.space_after = Pt(12)
+
+    prc1 = tf_rc.add_paragraph()
+    prc1.text = "B2B travel platforms like TBO deploy microservice updates multiple times a day. Conventional security testing is periodic and generic—blind to catastrophic business-logic vulnerabilities like $1 flight price tampering, cross-agency IDOR passport data leaks, duplicate refund exploits, and unmonitored zombie endpoints."
+    prc1.font.size = Pt(13)
+    prc1.font.color.rgb = C_TEXT_DARK
+    prc1.space_after = Pt(18)
+
+    prc2 = tf_rc.add_paragraph()
+    prc2.text = "RouteZero is an agentic AppSec engine that sniffs live HTTP traffic to map schemas without swagger docs, auto-identifies shadow and deprecated routes, plans multi-step contextual business attacks, and generates verified curl reproduction proofs with exact code fixes."
+    prc2.font.size = Pt(13)
+    prc2.font.color.rgb = C_TEXT_MUTED
+    prc2.space_after = Pt(28)
+
+    # Links Box on Cover
+    add_shape(s1, Inches(5.3), Inches(5.3), Inches(7.3), Inches(1.3), C_PEACH_BOX, rounded=True)
+    t_c_links = s1.shapes.add_textbox(Inches(5.5), Inches(5.45), Inches(6.9), Inches(1.0))
+    tc_tf = t_c_links.text_frame
+    tc_p0 = tc_tf.paragraphs[0]
+    tc_p0.text = "LIVE PLATFORM:  https://saisanthosh31.github.io/routezero/"
+    tc_p0.font.size = Pt(11.5)
+    tc_p0.font.bold = True
+    tc_p0.font.color.rgb = C_CORAL
+    tc_p0.space_after = Pt(6)
+
+    tc_p1 = tc_tf.add_paragraph()
+    tc_p1.text = "SOURCE REPO:     https://github.com/SaiSanthosh31/routezero"
+    tc_p1.font.size = Pt(11.5)
+    tc_p1.font.bold = True
+    tc_p1.font.color.rgb = C_TEAL_DARK
+
+    add_footer(s1)
 
     # ========================================================
-    # SLIDE 2: THE PROBLEM & PROPOSED SOLUTION (Exact Slide 3 of Template)
+    # SLIDE 2: EXACT IMAGE 2 TEMPLATE (Sidebar, Problem, Affected, Evidence, Pipeline)
     # ========================================================
     s2 = prs.slides.add_slide(blank_layout)
-    draw_bg(s2)
+    set_white_canvas(s2)
 
-    # Top Title Bar in Deep Teal
-    add_rect(s2, Inches(0.8), Inches(0.4), Inches(11.733), Inches(0.75), COLOR_TEAL_DARK, rounded=True)
-    t_s2_hdr = s2.shapes.add_textbox(Inches(1.0), Inches(0.45), Inches(10.0), Inches(0.6))
-    p_s2_h = t_s2_hdr.text_frame.paragraphs[0]
-    p_s2_h.text = "Autonomous Real-Time DAST for B2B Travel Platforms"
-    p_s2_h.font.size = Pt(18)
-    p_s2_h.font.bold = True
-    p_s2_h.font.color.rgb = COLOR_WHITE
+    # Left Dark Teal Sidebar (Full Bleed matching Image 2)
+    add_shape(s2, Inches(0.0), Inches(0.0), Inches(4.5), Inches(7.5), C_TEAL_DARK, rounded=False)
 
-    # Big Coral Stat Box (Top Right)
-    add_rect(s2, Inches(9.2), Inches(1.3), Inches(3.333), Inches(1.4), COLOR_CORAL, rounded=True)
-    t_stat = s2.shapes.add_textbox(Inches(9.3), Inches(1.35), Inches(3.1), Inches(1.3))
-    t_stf = t_stat.text_frame
-    t_stf.word_wrap = True
-    p_st0 = t_stf.paragraphs[0]
-    p_st0.text = "<50ms"
-    p_st0.font.size = Pt(32)
-    p_st0.font.bold = True
-    p_st0.font.color.rgb = COLOR_WHITE
-    p_st1 = t_stf.add_paragraph()
-    p_st1.text = "Deploy-to-attack reaction time vs 7+ days for traditional scans"
-    p_st1.font.size = Pt(10.5)
-    p_st1.font.color.rgb = COLOR_WHITE
+    # Orange Tag at top: PROBLEM 2 (Spaced uppercase)
+    t_p_tag = s2.shapes.add_textbox(Inches(0.8), Inches(1.1), Inches(3.4), Inches(0.4))
+    ptag_p = t_p_tag.text_frame.paragraphs[0]
+    ptag_p.text = "P R O B L E M   2"
+    ptag_p.font.size = Pt(11)
+    ptag_p.font.bold = True
+    ptag_p.font.color.rgb = C_CORAL
 
-    # Left Column: THE PROBLEM
-    add_rect(s2, Inches(0.8), Inches(1.3), Inches(8.2), Inches(1.4), COLOR_WHITE, border_rgb=COLOR_PILL_GRAY, rounded=True)
-    t_prob = s2.shapes.add_textbox(Inches(1.0), Inches(1.35), Inches(7.8), Inches(1.3))
-    tptf = t_prob.text_frame
-    tptf.word_wrap = True
-    pt0 = tptf.paragraphs[0]
-    pt0.text = "THE PROBLEM"
-    pt0.font.size = Pt(12)
-    pt0.font.bold = True
-    pt0.font.color.rgb = COLOR_CORAL
-    pt0.space_after = Pt(2)
-    pt1 = tptf.add_paragraph()
-    pt1.text = "TBO updates booking and inventory APIs daily. Conventional security scanners run on weekly schedules and spray generic payloads, missing critical business-logic abuse: $1 flight fare tampering, cross-agency IDOR passport leaks, and unmonitored zombie/shadow APIs."
-    pt1.font.size = Pt(11)
-    pt1.font.color.rgb = COLOR_TEXT_DARK
+    # Title in Teal bar (Large, crisp white, bold)
+    t_p_title = s2.shapes.add_textbox(Inches(0.8), Inches(1.6), Inches(3.4), Inches(2.2))
+    tf_pt = t_p_title.text_frame
+    tf_pt.word_wrap = True
+    pt_title = tf_pt.paragraphs[0]
+    pt_title.text = "Travel API Logic\n& Shadow Route\nVulnerabilities"
+    pt_title.font.size = Pt(30)
+    pt_title.font.bold = True
+    pt_title.font.color.rgb = C_WHITE
 
-    # Middle Section: WHO IS AFFECTED (3 Rounded Cards: Direct, Indirect, Others)
-    t_who_lbl = s2.shapes.add_textbox(Inches(0.8), Inches(2.8), Inches(11.733), Inches(0.35))
-    p_who = t_who_lbl.text_frame.paragraphs[0]
-    p_who.text = "WHO IS AFFECTED"
-    p_who.font.size = Pt(12)
-    p_who.font.bold = True
-    p_who.font.color.rgb = COLOR_TEAL_DARK
+    # Orange divider line
+    add_shape(s2, Inches(0.8), Inches(4.1), Inches(0.8), Inches(0.06), C_CORAL, rounded=False)
 
-    affected_groups = [
-        ("DIRECT", COLOR_CORAL, "Travel Agencies & End Travelers", "Suffer financial loss from fraudulent bookings, leaked passenger passport PII, and unauthorized fare cancellations."),
-        ("INDIRECT", COLOR_SAGE_TEAL, "TBO Operations & Finance", "Face revenue leakage, margin theft via coupon replay, manual ticket triage fatigue, and supplier escrow depletion."),
-        ("OTHERS", COLOR_TEAL_DARK, "Compliance & Platform Infrastructure", "Risk severe penalties under India's DPDP Act 2023 for cross-agency data exposure and unmapped API sprawl.")
+    # Big Metric in Sidebar (Matching 5.8% style from Image 2)
+    t_p_stat = s2.shapes.add_textbox(Inches(0.8), Inches(4.4), Inches(3.4), Inches(2.2))
+    tf_ps = t_p_stat.text_frame
+    tf_ps.word_wrap = True
+    pps0 = tf_ps.paragraphs[0]
+    pps0.text = "100%"
+    pps0.font.size = Pt(50)
+    pps0.font.bold = True
+    pps0.font.color.rgb = C_WHITE
+    pps0.space_after = Pt(4)
+
+    pps1 = tf_ps.add_paragraph()
+    pps1.text = "of business-logic exploits bypass conventional DAST scanners, remaining undetected until attackers strike."
+    pps1.font.size = Pt(11)
+    pps1.font.color.rgb = C_ROW_BG
+
+    # ---------------- RIGHT CONTENT AREA ----------------
+    # SECTION 1: THE PROBLEM
+    t_prob_hdr = s2.shapes.add_textbox(Inches(5.2), Inches(0.6), Inches(7.5), Inches(0.3))
+    pph = t_prob_hdr.text_frame.paragraphs[0]
+    pph.text = "T H E   P R O B L E M"
+    pph.font.size = Pt(10.5)
+    pph.font.bold = True
+    pph.font.color.rgb = C_SAGE_TEAL
+
+    t_prob_txt = s2.shapes.add_textbox(Inches(5.2), Inches(0.9), Inches(7.5), Inches(0.95))
+    pp_tf = t_prob_txt.text_frame
+    pp_tf.word_wrap = True
+    pp_p = pp_tf.paragraphs[0]
+    pp_p.text = "B2B travel platforms change constantly. Existing security scans run periodically and spray generic SQLi/XSS payloads, missing business-logic flaws like $1 flight price overrides, cross-agency IDOR passport theft, duplicate refunds, and unmonitored zombie APIs."
+    pp_p.font.size = Pt(10.5)
+    pp_p.font.color.rgb = C_TEXT_DARK
+
+    # SECTION 2: WHO IS AFFECTED
+    t_who_hdr = s2.shapes.add_textbox(Inches(5.2), Inches(1.95), Inches(7.5), Inches(0.3))
+    pwh = t_who_hdr.text_frame.paragraphs[0]
+    pwh.text = "W H O   I S   A F F E C T E D"
+    pwh.font.size = Pt(10.5)
+    pwh.font.bold = True
+    pwh.font.color.rgb = C_SAGE_TEAL
+
+    # Row 1: DIRECT (Matching Image 2: Orange Badge + Light blue-gray container side-by-side)
+    add_shape(s2, Inches(5.2), Inches(2.3), Inches(1.2), Inches(0.48), C_CORAL, rounded=True)
+    t_tag_d = s2.shapes.add_textbox(Inches(5.2), Inches(2.32), Inches(1.2), Inches(0.44))
+    t_tag_d.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    pt_d = t_tag_d.text_frame.paragraphs[0]
+    pt_d.text = "DIRECT"
+    pt_d.alignment = PP_ALIGN.CENTER
+    pt_d.font.size = Pt(9.5)
+    pt_d.font.bold = True
+    pt_d.font.color.rgb = C_WHITE
+
+    add_shape(s2, Inches(6.5), Inches(2.3), Inches(6.2), Inches(0.48), C_ROW_BG, rounded=True)
+    t_desc_d = s2.shapes.add_textbox(Inches(6.6), Inches(2.32), Inches(6.0), Inches(0.44))
+    t_desc_d.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    p_dd = t_desc_d.text_frame.paragraphs[0]
+    p_dd.text = "Travel agencies & passengers (fraudulent bookings, stolen passport data & cancelled tickets)"
+    p_dd.font.size = Pt(9.5)
+    p_dd.font.color.rgb = C_TEXT_DARK
+
+    # Row 2: INDIRECT
+    add_shape(s2, Inches(5.2), Inches(2.88), Inches(1.2), Inches(0.48), C_SAGE_TEAL, rounded=True)
+    t_tag_i = s2.shapes.add_textbox(Inches(5.2), Inches(2.9), Inches(1.2), Inches(0.44))
+    t_tag_i.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    pt_i = t_tag_i.text_frame.paragraphs[0]
+    pt_i.text = "INDIRECT"
+    pt_i.alignment = PP_ALIGN.CENTER
+    pt_i.font.size = Pt(9.5)
+    pt_i.font.bold = True
+    pt_i.font.color.rgb = C_WHITE
+
+    add_shape(s2, Inches(6.5), Inches(2.88), Inches(6.2), Inches(0.48), C_ROW_BG, rounded=True)
+    t_desc_i = s2.shapes.add_textbox(Inches(6.6), Inches(2.9), Inches(6.0), Inches(0.44))
+    t_desc_i.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    p_di = t_desc_i.text_frame.paragraphs[0]
+    p_di.text = "TBO operations & finance (margin loss, depleted refund pools, and manual ticket triage)"
+    p_di.font.size = Pt(9.5)
+    p_di.font.color.rgb = C_TEXT_DARK
+
+    # Row 3: OTHERS
+    add_shape(s2, Inches(5.2), Inches(3.46), Inches(1.2), Inches(0.48), C_TEAL_DARK, rounded=True)
+    t_tag_o = s2.shapes.add_textbox(Inches(5.2), Inches(3.48), Inches(1.2), Inches(0.44))
+    t_tag_o.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    pt_o = t_tag_o.text_frame.paragraphs[0]
+    pt_o.text = "OTHERS"
+    pt_o.alignment = PP_ALIGN.CENTER
+    pt_o.font.size = Pt(9.5)
+    pt_o.font.bold = True
+    pt_o.font.color.rgb = C_WHITE
+
+    add_shape(s2, Inches(6.5), Inches(3.46), Inches(6.2), Inches(0.48), C_ROW_BG, rounded=True)
+    t_desc_o = s2.shapes.add_textbox(Inches(6.6), Inches(3.48), Inches(6.0), Inches(0.44))
+    t_desc_o.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    p_do = t_desc_o.text_frame.paragraphs[0]
+    p_do.text = "Platform engineers & compliance teams (India DPDP Act penalties & shadow API sprawl)"
+    p_do.font.size = Pt(9.5)
+    p_do.font.color.rgb = C_TEXT_DARK
+
+    # SECTION 3: EVIDENCE
+    t_ev_hdr = s2.shapes.add_textbox(Inches(5.2), Inches(4.08), Inches(7.5), Inches(0.3))
+    pevh = t_ev_hdr.text_frame.paragraphs[0]
+    pevh.text = "E V I D E N C E"
+    pevh.font.size = Pt(10.5)
+    pevh.font.bold = True
+    pevh.font.color.rgb = C_SAGE_TEAL
+
+    t_ev_txt = s2.shapes.add_textbox(Inches(5.2), Inches(4.35), Inches(7.5), Inches(0.75))
+    pev_tf = t_ev_txt.text_frame
+    pev_tf.word_wrap = True
+    pevp = pev_tf.paragraphs[0]
+    pevp.text = "Tested live on production-like travel staging: caught $1 flight fare tampering, cross-agency IDOR passport leak, deprecated 50% discount voucher leak, and internal DB telemetry disclosure. Found through: automated live multi-role API security simulation."
+    pevp.font.size = Pt(10)
+    pevp.font.color.rgb = C_TEXT_DARK
+
+    # SECTION 4: NEED & PIPELINE (Peach Box with 3 connected white cards matching Image 2)
+    add_shape(s2, Inches(5.2), Inches(5.25), Inches(7.5), Inches(1.65), C_PEACH_BOX, rounded=True)
+    t_need_lbl = s2.shapes.add_textbox(Inches(5.4), Inches(5.33), Inches(7.1), Inches(0.3))
+    pnd = t_need_lbl.text_frame.paragraphs[0]
+    pnd.text = "NEED: An early-warning system for travel API business-logic and shadow risks"
+    pnd.font.size = Pt(10.5)
+    pnd.font.bold = True
+    pnd.font.color.rgb = C_CORAL
+
+    # Exactly 3 Horizontal Step Cards with Arrows (DETECT > ASSESS > ALERT style)
+    pipeline_3steps = [
+        ("DETECT", "temperature, humidity, body temp -> travel traffic, endpoints, shadow APIs"),
+        ("ASSESS", "heat-stress risk -> business-logic exploit feasibility"),
+        ("ALERT", "supervisors before severe -> dev teams with curl PoC & code fix")
+    ]
+    
+    # Let's write clear, punchy 3 steps:
+    pipeline_steps = [
+        ("DISCOVER", "Observe live HTTP traffic & map shadow/zombie routes"),
+        ("EXPLOIT", "Execute safe multi-step travel logic attacks"),
+        ("REMEDIATE", "Deliver verified curl proof & patch code to devs")
     ]
 
-    for idx, (label, color_bar, title, desc) in enumerate(affected_groups):
-        card_x = Inches(0.8 + idx * 3.95)
-        add_rect(s2, card_x, Inches(3.2), Inches(3.8), Inches(1.4), COLOR_PILL_GRAY, rounded=True)
-        add_rect(s2, card_x, Inches(3.2), Inches(3.8), Inches(0.3), color_bar, rounded=True)
+    card_w = Inches(2.15)
+    card_h = Inches(1.0)
+    card_gap = Inches(0.35)
+    start_x = Inches(5.45)
+    card_y = Inches(5.72)
+
+    for st_i, (step_t, step_sub) in enumerate(pipeline_steps):
+        bx = start_x + st_i * (card_w + card_gap)
+        add_shape(s2, bx, card_y, card_w, card_h, C_WHITE, rounded=True)
         
-        # Label in top strip
-        tx_tag = s2.shapes.add_textbox(card_x + Inches(0.15), Inches(3.2), Inches(3.5), Inches(0.28))
-        ptag = tx_tag.text_frame.paragraphs[0]
-        ptag.text = label
-        ptag.font.size = Pt(9.5)
-        ptag.font.bold = True
-        ptag.font.color.rgb = COLOR_WHITE
-
-        # Card text
-        tx_c = s2.shapes.add_textbox(card_x + Inches(0.15), Inches(3.55), Inches(3.5), Inches(1.0))
-        ctf = tx_c.text_frame
-        ctf.word_wrap = True
-        cp0 = ctf.paragraphs[0]
-        cp0.text = title
-        cp0.font.size = Pt(11)
-        cp0.font.bold = True
-        cp0.font.color.rgb = COLOR_TEXT_DARK
-        cp1 = ctf.add_paragraph()
-        cp1.text = desc
-        cp1.font.size = Pt(9.5)
-        cp1.font.color.rgb = COLOR_TEXT_MUTED
-
-    # Bottom Section: IDEA IN MIND (Workflow Pipeline)
-    add_rect(s2, Inches(0.8), Inches(4.8), Inches(11.733), Inches(2.2), COLOR_PILL_PEACH, rounded=True)
-    t_idea_lbl = s2.shapes.add_textbox(Inches(1.0), Inches(4.85), Inches(11.3), Inches(0.35))
-    p_idea = t_idea_lbl.text_frame.paragraphs[0]
-    p_idea.text = "IDEA IN MIND: ROUTEZERO 5-STAGE AUTONOMOUS PIPELINE"
-    p_idea.font.size = Pt(11.5)
-    p_idea.font.bold = True
-    p_idea.font.color.rgb = COLOR_CORAL
-
-    stages = [
-        ("DETECT", "Parses live traffic & HAR logs to infer routes & schemas."),
-        ("MAP", "Categorizes Active, Zombie (/v1), and Shadow APIs."),
-        ("PLAN", "LLM designs targeted travel business-logic exploits."),
-        ("EXPLOIT", "Safely executes attacks with allowlisting & rate limits."),
-        ("VERIFY", "Delivers 1-click curl proofs & developer code fixes.")
-    ]
-
-    for s_idx, (st_name, st_desc) in enumerate(stages):
-        box_x = Inches(1.0 + s_idx * 2.3)
-        add_rect(s2, box_x, Inches(5.25), Inches(2.1), Inches(1.5), COLOR_WHITE, border_rgb=COLOR_CORAL, rounded=True)
-        
-        stx = s2.shapes.add_textbox(box_x + Inches(0.1), Inches(5.35), Inches(1.9), Inches(1.3))
+        stx = s2.shapes.add_textbox(bx + Inches(0.08), card_y + Inches(0.08), card_w - Inches(0.16), card_h - Inches(0.16))
         stf = stx.text_frame
         stf.word_wrap = True
-        
-        sp0 = stf.paragraphs[0]
-        sp0.text = st_name
-        sp0.font.size = Pt(12)
-        sp0.font.bold = True
-        sp0.font.color.rgb = COLOR_TEAL_DARK
-        sp0.space_after = Pt(4)
+        stp0 = stf.paragraphs[0]
+        stp0.text = step_t
+        stp0.alignment = PP_ALIGN.CENTER
+        stp0.font.size = Pt(11)
+        stp0.font.bold = True
+        stp0.font.color.rgb = C_CORAL
+        stp0.space_after = Pt(2)
 
-        sp1 = stf.add_paragraph()
-        sp1.text = st_desc
-        sp1.font.size = Pt(9.5)
-        sp1.font.color.rgb = COLOR_TEXT_MUTED
+        stp1 = stf.add_paragraph()
+        stp1.text = step_sub
+        stp1.alignment = PP_ALIGN.CENTER
+        stp1.font.size = Pt(8.5)
+        stp1.font.color.rgb = C_TEXT_MUTED
 
-        if s_idx < 4:
-            arr = s2.shapes.add_textbox(box_x + Inches(2.05), Inches(5.7), Inches(0.3), Inches(0.4))
-            ap = arr.text_frame.paragraphs[0]
-            ap.text = ">"
-            ap.font.size = Pt(14)
-            ap.font.bold = True
-            ap.font.color.rgb = COLOR_CORAL
+        if st_i < 2:
+            # Sleek Right Arrow between cards
+            arr = s2.shapes.add_shape(
+                MSO_SHAPE.RIGHT_ARROW, 
+                bx + card_w + Inches(0.08), 
+                card_y + Inches(0.4), 
+                Inches(0.18), 
+                Inches(0.2)
+            )
+            arr.fill.solid()
+            arr.fill.fore_color.rgb = C_CORAL
+            arr.line.fill.background()
+
+    add_footer(s2)
 
     # ========================================================
-    # SLIDE 3: VALIDATED RESULTS & ENTERPRISE ROI (Content 2)
+    # SLIDE 3: EXACT IMAGE 1 TEMPLATE (5 Whys Root Cause Analysis)
     # ========================================================
     s3 = prs.slides.add_slide(blank_layout)
-    draw_bg(s3)
+    set_white_canvas(s3)
 
-    # Top Teal Bar Header Card
-    add_rect(s3, Inches(0.8), Inches(0.4), Inches(11.733), Inches(0.75), COLOR_TEAL_DARK, rounded=True)
-    t_s3_hdr = s3.shapes.add_textbox(Inches(1.0), Inches(0.45), Inches(10.0), Inches(0.6))
-    p_s3_h = t_s3_hdr.text_frame.paragraphs[0]
-    p_s3_h.text = "Validated Results, Target Exploits & Value for TBO.com"
-    p_s3_h.font.size = Pt(18)
-    p_s3_h.font.bold = True
-    p_s3_h.font.color.rgb = COLOR_WHITE
+    # Left Edge Vertical Accent Strip (Exact Image 1: Teal line on far left with orange tab)
+    add_shape(s3, Inches(0.0), Inches(0.0), Inches(0.25), Inches(7.5), C_TEAL_DARK, rounded=False)
+    add_shape(s3, Inches(0.0), Inches(1.0), Inches(0.25), Inches(1.1), C_CORAL, rounded=False)
 
-    # Big Teal Stat Box (Top Right)
-    add_rect(s3, Inches(9.2), Inches(1.3), Inches(3.333), Inches(1.4), COLOR_SAGE_TEAL, rounded=True)
-    t_stat3 = s3.shapes.add_textbox(Inches(9.3), Inches(1.35), Inches(3.1), Inches(1.3))
-    t_stf3 = t_stat3.text_frame
-    t_stf3.word_wrap = True
-    p_st3_0 = t_stf3.paragraphs[0]
-    p_st3_0.text = "0% False Positives"
-    p_st3_0.font.size = Pt(24)
-    p_st3_0.font.bold = True
-    p_st3_0.font.color.rgb = COLOR_WHITE
-    p_st3_1 = t_stf3.add_paragraph()
-    p_st3_1.text = "Every finding backed by raw HTTP reproduction curl proof"
-    p_st3_1.font.size = Pt(10.5)
-    p_st3_1.font.color.rgb = COLOR_WHITE
+    # Title: 5 Whys (Exact Image 1)
+    t_5w = s3.shapes.add_textbox(Inches(0.7), Inches(0.55), Inches(4.0), Inches(0.75))
+    p_5w = t_5w.text_frame.paragraphs[0]
+    p_5w.text = "5 Whys"
+    p_5w.font.size = Pt(34)
+    p_5w.font.bold = True
+    p_5w.font.color.rgb = C_TEAL_DARK
 
-    # Top Left Summary Box
-    add_rect(s3, Inches(0.8), Inches(1.3), Inches(8.2), Inches(1.4), COLOR_WHITE, border_rgb=COLOR_PILL_GRAY, rounded=True)
-    t_sum3 = s3.shapes.add_textbox(Inches(1.0), Inches(1.35), Inches(7.8), Inches(1.3))
-    tsf3 = t_sum3.text_frame
-    tsf3.word_wrap = True
-    ps3_0 = tsf3.paragraphs[0]
-    ps3_0.text = "VALIDATION ON LIVE TARGET"
-    ps3_0.font.size = Pt(12)
-    ps3_0.font.bold = True
-    ps3_0.font.color.rgb = COLOR_CORAL
-    ps3_0.space_after = Pt(2)
-    ps3_1 = tsf3.add_paragraph()
-    ps3_1.text = "RouteZero was evaluated against a live, production-like mock B2B travel portal with seeded vulnerabilities. It successfully discovered 6 API endpoints and proved 5 high-severity vulnerabilities without any OpenAPI specification provided."
-    ps3_1.font.size = Pt(11)
-    ps3_1.font.color.rgb = COLOR_TEXT_DARK
+    # Orange underline bar (Exact Image 1)
+    add_shape(s3, Inches(0.7), Inches(1.4), Inches(0.85), Inches(0.06), C_CORAL, rounded=False)
 
-    # Middle Row: 5 Confirmed Vulnerabilities (White Cards)
-    t_vuln_lbl = s3.shapes.add_textbox(Inches(0.8), Inches(2.8), Inches(11.733), Inches(0.35))
-    p_vlbl = t_vuln_lbl.text_frame.paragraphs[0]
-    p_vlbl.text = "5 PROVEN EXPLOITS ON LIVE TARGET PLATFORM"
-    p_vlbl.font.size = Pt(12)
-    p_vlbl.font.bold = True
-    p_vlbl.font.color.rgb = COLOR_TEAL_DARK
+    # Main Problem Dark Teal Card
+    add_shape(s3, Inches(0.7), Inches(1.7), Inches(11.8), Inches(0.55), C_TEAL_DARK, rounded=True)
+    t_mp = s3.shapes.add_textbox(Inches(0.9), Inches(1.75), Inches(11.4), Inches(0.45))
+    t_mp.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    pmp = t_mp.text_frame.paragraphs[0]
+    pmp.text = "Problem: TBO B2B travel APIs suffer undetected business-logic flaws and shadow route leaks"
+    pmp.font.size = Pt(11)
+    pmp.font.bold = True
+    pmp.font.color.rgb = C_WHITE
 
-    exploits_data = [
-        ("Price Tampering (CRITICAL)", "Overrode $450 flight fare to $1.00 via client parameter tampering in /api/v2/bookings/create."),
-        ("Tenant IDOR & PII Leak (CRITICAL)", "Agency-002 accessed Agency-001 booking records & exfiltrated passenger passport data."),
-        ("Zombie Promo Code Leak (HIGH)", "Unauthenticated deprecated /v1/ legacy route leaked valid 50% internal staff discount code."),
-        ("Shadow Telemetry Leak (HIGH)", "Publicly accessible /internal/ endpoint exposed database connection strings and environment info."),
-        ("Double Refund State Flaw (HIGH)", "Executed infinite refund payouts without booking cancellation state verification.")
+    # 5 Whys Pairs (Exact Image 1: Teal on Left, Vector Arrow -> Soft Blue on Right)
+    whys_data = [
+        ("Why 1? Why do business-logic flaws go undetected?",
+         "Because traditional DAST scanners only spray generic SQLi/XSS payloads and miss travel workflows."),
+        ("Why 2? Why can't legacy scanners catch logic bugs?",
+         "Because they do not understand application context like booking pricing, refunds, and multi-tenant agency roles."),
+        ("Why 3? Why are APIs not tested against business context?",
+         "Because manual pentesting takes weeks while TBO microservices deploy updates multiple times a day."),
+        ("Why 4? Why do zombie and shadow APIs remain exposed?",
+         "Because deprecated /v1 routes and debug endpoints remain live in production without traffic tracking."),
+        ("Why 5? Why is continuous protection missing?",
+         "Because no autonomous agent observes traffic, infers schemas, and executes targeted business exploits.")
     ]
 
-    for v_idx, (v_name, v_detail) in enumerate(exploits_data):
-        vx = Inches(0.8 + v_idx * 2.37)
-        add_rect(s3, vx, Inches(3.2), Inches(2.25), Inches(1.8), COLOR_PILL_GRAY, rounded=True)
-        add_rect(s3, vx, Inches(3.2), Inches(2.25), Inches(0.28), COLOR_TEAL_DARK, rounded=True)
+    for w_i, (left_q, right_a) in enumerate(whys_data):
+        y_pos = Inches(2.45 + w_i * 0.72)
+        
+        # Left Teal Box
+        add_shape(s3, Inches(0.7), y_pos, Inches(4.3), Inches(0.56), C_TEAL_DARK, rounded=True)
+        tx_l = s3.shapes.add_textbox(Inches(0.8), y_pos + Inches(0.05), Inches(4.1), Inches(0.46))
+        tx_l.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+        tx_l.text_frame.word_wrap = True
+        pl = tx_l.text_frame.paragraphs[0]
+        pl.text = left_q
+        pl.font.size = Pt(10)
+        pl.font.bold = True
+        pl.font.color.rgb = C_WHITE
 
-        v_tx = s3.shapes.add_textbox(vx + Inches(0.1), Inches(3.52), Inches(2.05), Inches(1.4))
-        v_tf = v_tx.text_frame
-        v_tf.word_wrap = True
-        vp0 = v_tf.paragraphs[0]
-        vp0.text = v_name
-        vp0.font.size = Pt(10)
-        vp0.font.bold = True
-        vp0.font.color.rgb = COLOR_CORAL
-        vp0.space_after = Pt(3)
-        vp1 = v_tf.add_paragraph()
-        vp1.text = v_detail
-        vp1.font.size = Pt(9)
-        vp1.font.color.rgb = COLOR_TEXT_MUTED
+        # Vector Arrow connector (Exact clean look like Image 1)
+        arr_5w = s3.shapes.add_shape(
+            MSO_SHAPE.RIGHT_ARROW, 
+            Inches(5.08), 
+            y_pos + Inches(0.2), 
+            Inches(0.24), 
+            Inches(0.16)
+        )
+        arr_5w.fill.solid()
+        arr_5w.fill.fore_color.rgb = C_SAGE_TEAL
+        arr_5w.line.fill.background()
 
-    # Bottom Section: TBO ENTERPRISE VALUE (Peach Box)
-    add_rect(s3, Inches(0.8), Inches(5.15), Inches(11.733), Inches(1.9), COLOR_PILL_PEACH, rounded=True)
-    t_roi_lbl = s3.shapes.add_textbox(Inches(1.0), Inches(5.2), Inches(11.3), Inches(0.35))
-    p_roi_h = t_roi_lbl.text_frame.paragraphs[0]
-    p_roi_h.text = "STRATEGIC ROI & COMPLIANCE IMPACT FOR TBO.COM"
-    p_roi_h.font.size = Pt(11.5)
-    p_roi_h.font.bold = True
-    p_roi_h.font.color.rgb = COLOR_CORAL
+        # Right Soft Blue Box
+        add_shape(s3, Inches(5.4), y_pos, Inches(7.1), Inches(0.56), C_ROW_BG, rounded=True)
+        tx_r = s3.shapes.add_textbox(Inches(5.55), y_pos + Inches(0.05), Inches(6.8), Inches(0.46))
+        tx_r.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+        tx_r.text_frame.word_wrap = True
+        pr = tx_r.text_frame.paragraphs[0]
+        pr.text = right_a
+        pr.font.size = Pt(10)
+        pr.font.color.rgb = C_TEXT_DARK
 
-    rois = [
-        ("Revenue Shield", "Stops direct financial loss from client fare manipulation, coupon replay, and supplier escrow refund pool draining."),
-        ("DPDP Act Compliance", "Enforces strict cross-agency tenant boundaries, preventing massive statutory fines for passenger passport leaks."),
-        ("Sub-Minute MTTR", "Developers receive verified curl reproduction commands and ready-to-merge code fixes in seconds."),
-        ("Automated Governance", "Auto-generates and maintains a live OpenAPI 3.0 catalog as a by-product, ending unmapped API sprawl.")
-    ]
+    # Bottom Orange Highlight Box: ROOT CAUSE (Exact Image 1)
+    add_shape(s3, Inches(0.7), Inches(6.2), Inches(11.8), Inches(0.65), C_CORAL, rounded=True)
+    t_rc_box = s3.shapes.add_textbox(Inches(0.9), Inches(6.25), Inches(11.4), Inches(0.55))
+    t_rc_box.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    prc = t_rc_box.text_frame.paragraphs[0]
+    prc.text = "Root cause: The missing link between real-time traffic discovery and autonomous logic exploit testing"
+    prc.font.size = Pt(11.5)
+    prc.font.bold = True
+    prc.font.color.rgb = C_WHITE
 
-    for r_idx, (r_title, r_desc) in enumerate(rois):
-        rx = Inches(1.0 + r_idx * 2.85)
-        add_rect(s3, rx, Inches(5.6), Inches(2.7), Inches(1.3), COLOR_WHITE, border_rgb=COLOR_CORAL, rounded=True)
-        rtx = s3.shapes.add_textbox(rx + Inches(0.12), Inches(5.68), Inches(2.45), Inches(1.15))
-        rtf = rtx.text_frame
-        rtf.word_wrap = True
-        rp0 = rtf.paragraphs[0]
-        rp0.text = r_title
-        rp0.font.size = Pt(11)
-        rp0.font.bold = True
-        rp0.font.color.rgb = COLOR_TEAL_DARK
-        rp0.space_after = Pt(2)
-        rp1 = rtf.add_paragraph()
-        rp1.text = r_desc
-        rp1.font.size = Pt(9)
-        rp1.font.color.rgb = COLOR_TEXT_MUTED
+    add_footer(s3)
 
     # ========================================================
-    # SLIDE 4: TEAM & THANK YOU SLIDE (Exact Slide 18 of Template)
+    # SLIDE 4: THANK YOU SLIDE (Full-bleed Left Sidebar)
     # ========================================================
     s4 = prs.slides.add_slide(blank_layout)
-    draw_bg(s4)
+    set_white_canvas(s4)
 
-    add_rect(s4, Inches(1.0), Inches(1.2), Inches(11.333), Inches(5.1), COLOR_WHITE, border_rgb=COLOR_PILL_GRAY, rounded=True)
-    add_rect(s4, Inches(1.0), Inches(1.2), Inches(11.333), Inches(1.1), COLOR_TEAL_DARK, rounded=False)
+    # Full Bleed Left Dark Teal Column
+    add_shape(s4, Inches(0.0), Inches(0.0), Inches(4.5), Inches(7.5), C_TEAL_DARK, rounded=False)
 
-    t_s4_hdr = s4.shapes.add_textbox(Inches(1.3), Inches(1.35), Inches(10.7), Inches(0.8))
-    tf4 = t_s4_hdr.text_frame
-    p_t4_0 = tf4.paragraphs[0]
-    p_t4_0.text = "TEAM: ROUTEZERO  *  VOYAGEHACK 4.0"
-    p_t4_0.font.size = Pt(13)
-    p_t4_0.font.bold = True
-    p_t4_0.font.color.rgb = COLOR_CORAL
-    p_t4_0.space_after = Pt(2)
-    p_t4_1 = tf4.add_paragraph()
-    p_t4_1.text = "Thank You"
-    p_t4_1.font.size = Pt(22)
-    p_t4_1.font.bold = True
-    p_t4_1.font.color.rgb = COLOR_WHITE
+    t_ty_tag = s4.shapes.add_textbox(Inches(0.8), Inches(1.1), Inches(3.4), Inches(0.4))
+    pty0 = t_ty_tag.text_frame.paragraphs[0]
+    pty0.text = "ROUTEZERO // TBO VOYAGEHACK 4.0"
+    pty0.font.size = Pt(11)
+    pty0.font.bold = True
+    pty0.font.color.rgb = C_CORAL
 
-    # 4 Team Members & Roles (Matching Template Slide 18 Layout)
-    team_members = [
-        ("Sai Santhosh", "Lead Backend & AI Agent Engine", "Built the LLM attack planner, safe exploit executor, verifier proofs, and core APIs."),
-        ("Dharani", "Backend & Recon Engine", "Built traffic parser, zombie & shadow API classifier, and database persistence."),
+    t_ty_title = s4.shapes.add_textbox(Inches(0.8), Inches(1.6), Inches(3.4), Inches(2.2))
+    tf_ty = t_ty_title.text_frame
+    tf_ty.word_wrap = True
+    pty1 = tf_ty.paragraphs[0]
+    pty1.text = "Thank You."
+    pty1.font.size = Pt(46)
+    pty1.font.bold = True
+    pty1.font.color.rgb = C_WHITE
+
+    add_shape(s4, Inches(0.8), Inches(4.1), Inches(0.8), Inches(0.06), C_CORAL, rounded=False)
+
+    t_ty_desc = s4.shapes.add_textbox(Inches(0.8), Inches(4.4), Inches(3.4), Inches(2.2))
+    tf_td = t_ty_desc.text_frame
+    tf_td.word_wrap = True
+    ptyd0 = tf_td.paragraphs[0]
+    ptyd0.text = "RouteZero is ready for evaluation."
+    ptyd0.font.size = Pt(14)
+    ptyd0.font.bold = True
+    ptyd0.font.color.rgb = C_WHITE
+    ptyd0.space_after = Pt(4)
+
+    ptyd1 = tf_td.add_paragraph()
+    ptyd1.text = "Full working prototype, live interactive dashboard, reproducible curl proofs, and automated OpenAPI spec generator."
+    ptyd1.font.size = Pt(10.5)
+    ptyd1.font.color.rgb = C_ROW_BG
+
+    # Right Content Area: Team Members & Links
+    t_tm_hdr = s4.shapes.add_textbox(Inches(5.2), Inches(0.7), Inches(7.5), Inches(0.35))
+    ptmh = t_tm_hdr.text_frame.paragraphs[0]
+    ptmh.text = "TEAM MEMBERS & CONTRIBUTIONS"
+    ptmh.font.size = Pt(11.5)
+    ptmh.font.bold = True
+    ptmh.font.color.rgb = C_SAGE_TEAL
+
+    team = [
+        ("Sai Santhosh", "Lead Backend & AI Engine", "Built LLM attack planner, safe exploit executor, verifier proof engine & core APIs."),
+        ("Dharani", "Backend & Recon Engine", "Built traffic sniffer, HAR parser, zombie & shadow API detector, and SQLite models."),
         ("Arun Hitesh", "Frontend Command Center", "Built security operations dashboard, live activity stream, and emergency kill switch."),
-        ("Mythreyan", "Frontend API Topology & PoC", "Built visual endpoint topology, vulnerability modal inspector, and retest trigger.")
+        ("Mythreyan", "Frontend API Topology & PoC", "Built visual endpoint topology graph, vulnerability inspector, and retest trigger.")
     ]
 
-    for m_idx, (name, role, contrib) in enumerate(team_members):
-        mx = Inches(1.3 + m_idx * 2.7)
-        add_rect(s4, mx, Inches(2.6), Inches(2.55), Inches(2.4), COLOR_PILL_GRAY, rounded=True)
-        mtx = s4.shapes.add_textbox(mx + Inches(0.12), Inches(2.7), Inches(2.3), Inches(2.2))
-        mtf = mtx.text_frame
-        mtf.word_wrap = True
-        
-        mp0 = mtf.paragraphs[0]
-        mp0.text = f"Name: {name}"
-        mp0.font.size = Pt(12)
-        mp0.font.bold = True
-        mp0.font.color.rgb = COLOR_TEAL_DARK
-        mp0.space_after = Pt(2)
+    for m_i, (name, role, contrib) in enumerate(team):
+        card_y = Inches(1.15 + m_i * 1.15)
+        # Left Tag Pill
+        add_shape(s4, Inches(5.2), card_y, Inches(1.8), Inches(0.95), C_TEAL_DARK, rounded=True)
+        tx_name = s4.shapes.add_textbox(Inches(5.25), card_y + Inches(0.12), Inches(1.7), Inches(0.75))
+        tx_name.text_frame.word_wrap = True
+        pn0 = tx_name.text_frame.paragraphs[0]
+        pn0.text = name
+        pn0.font.size = Pt(11)
+        pn0.font.bold = True
+        pn0.font.color.rgb = C_WHITE
+        pn1 = tx_name.text_frame.add_paragraph()
+        pn1.text = role
+        pn1.font.size = Pt(8.5)
+        pn1.font.color.rgb = C_CORAL
 
-        mp1 = mtf.add_paragraph()
-        mp1.text = f"Role: {role}"
-        mp1.font.size = Pt(10)
-        mp1.font.bold = True
-        mp1.font.color.rgb = COLOR_CORAL
-        mp1.space_after = Pt(4)
+        # Right Content Container
+        add_shape(s4, Inches(7.1), card_y, Inches(5.6), Inches(0.95), C_ROW_BG, rounded=True)
+        tx_cont = s4.shapes.add_textbox(Inches(7.2), card_y + Inches(0.12), Inches(5.4), Inches(0.75))
+        tx_cont.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+        tx_cont.text_frame.word_wrap = True
+        pc0 = tx_cont.text_frame.paragraphs[0]
+        pc0.text = contrib
+        pc0.font.size = Pt(10)
+        pc0.font.color.rgb = C_TEXT_DARK
 
-        mp2 = mtf.add_paragraph()
-        mp2.text = f"Contribution: {contrib}"
-        mp2.font.size = Pt(9)
-        mp2.font.color.rgb = COLOR_TEXT_MUTED
-
-    # Bottom Links
-    add_rect(s4, Inches(1.3), Inches(5.2), Inches(10.7), Inches(0.8), COLOR_PILL_PEACH, rounded=True)
-    t_links = s4.shapes.add_textbox(Inches(1.5), Inches(5.3), Inches(10.3), Inches(0.6))
-    tl_tf = t_links.text_frame
+    # Bottom Links Box
+    add_shape(s4, Inches(5.2), Inches(5.95), Inches(7.5), Inches(0.85), C_PEACH_BOX, rounded=True)
+    t_sub_links = s4.shapes.add_textbox(Inches(5.4), Inches(6.05), Inches(7.1), Inches(0.65))
+    tl_tf = t_sub_links.text_frame
     tl_p0 = tl_tf.paragraphs[0]
-    tl_p0.text = "Live Interactive Platform: https://saisanthosh31.github.io/routezero/   |   Source Code: https://github.com/SaiSanthosh31/routezero"
-    tl_p0.font.size = Pt(12)
+    tl_p0.text = "LIVE PLATFORM:  https://saisanthosh31.github.io/routezero/"
+    tl_p0.font.size = Pt(10.5)
     tl_p0.font.bold = True
-    tl_p0.font.color.rgb = COLOR_TEAL_DARK
+    tl_p0.font.color.rgb = C_CORAL
+
+    tl_p1 = tl_tf.add_paragraph()
+    tl_p1.text = "SOURCE CODE:    https://github.com/SaiSanthosh31/routezero"
+    tl_p1.font.size = Pt(10.5)
+    tl_p1.font.bold = True
+    tl_p1.font.color.rgb = C_TEAL_DARK
+
+    add_footer(s4)
 
     prs.save("RouteZero_VoyageHack_Submission.pptx")
-    print("Exact template presentation generated successfully!")
+    print("Exact screenshot matching presentation generated successfully!")
 
 if __name__ == "__main__":
-    build_template_deck()
+    build_exact_template_deck()
