@@ -303,7 +303,7 @@
  <!-- Top Emergency Kill Switch Banner (when active) -->
  <div id="killSwitchBanner" class="hidden bg-red-950/90 border-b border-red-500/60 px-6 py-2 text-center text-xs mono text-red-200 flex items-center justify-center gap-3 animate-pulse">
  <span class="inline-block w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
- <span class="font-bold tracking-wider">⚠ SAFETY GUARD KILL SWITCH ACTIVATED:</span>
+ <span class="font-bold tracking-wider">[!] SAFETY GUARD KILL SWITCH ACTIVATED:</span>
  <span>All autonomous attack execution and live payload injection is currently halted.</span>
  <button onclick="toggleKillSwitch()" class="ml-3 px-2 py-0.5 bg-red-600 hover:bg-red-500 text-white rounded text-[11px] font-semibold transition">
  DEACTIVATE KILL SWITCH
@@ -702,7 +702,7 @@
  </span>
  <span id="topologyCountBadge" class="text-[10px] px-2 py-0.2 rounded bg-zinc-900 border border-zinc-800 mono text-cyan-400">6 Routes</span>
  </div>
- <span class="text-[10px] text-zinc-500 mono">Hierarchical Attack Surface: <span class="text-zinc-400 font-semibold">/api</span> ➔ <span class="text-amber-400">/v1</span>, <span class="text-emerald-400">/v2</span> ➔ <span class="text-cyan-300">/flights, /bookings, /refunds, /internal</span></span>
+ <span class="text-[10px] text-zinc-500 mono">Hierarchical Attack Surface: <span class="text-zinc-400 font-semibold">/api</span> -> <span class="text-amber-400">/v1</span>, <span class="text-emerald-400">/v2</span> -> <span class="text-cyan-300">/flights, /bookings, /refunds, /internal</span></span>
  </div>
 
  <!-- Controls: Filters, View Toggles & Reset -->
@@ -771,7 +771,7 @@
  VIEW FINDINGS ->
  </button>
  <button onclick="closeTopologyDrawer()" class="px-2 py-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white text-[10px]">
- ✕
+ X
  </button>
  </div>
  </div>
@@ -991,28 +991,28 @@
  <div id="retestStep1" class="p-2 rounded bg-zinc-950/80 border border-zinc-800 text-zinc-500 transition-all duration-300 flex flex-col justify-between">
  <div class="flex items-center justify-between text-[10px] font-bold">
  <span>1. DISPATCH</span>
- <span id="stepIcon1">⏳</span>
+ <span id="stepIcon1">[..]</span>
  </div>
  <span class="text-[9px] text-zinc-400 mt-1">POST /api/retest</span>
  </div>
  <div id="retestStep2" class="p-2 rounded bg-zinc-950/80 border border-zinc-800 text-zinc-500 transition-all duration-300 flex flex-col justify-between">
  <div class="flex items-center justify-between text-[10px] font-bold">
  <span>2. TARGET INJECT</span>
- <span id="stepIcon2">⏳</span>
+ <span id="stepIcon2">[..]</span>
  </div>
  <span class="text-[9px] text-zinc-400 mt-1">Port 8001 Probe</span>
  </div>
  <div id="retestStep3" class="p-2 rounded bg-zinc-950/80 border border-zinc-800 text-zinc-500 transition-all duration-300 flex flex-col justify-between">
  <div class="flex items-center justify-between text-[10px] font-bold">
  <span>3. INVARIANT TEST</span>
- <span id="stepIcon3">⏳</span>
+ <span id="stepIcon3">[..]</span>
  </div>
  <span class="text-[9px] text-zinc-400 mt-1">Diff Validation</span>
  </div>
  <div id="retestStep4" class="p-2 rounded bg-zinc-950/80 border border-zinc-800 text-zinc-500 transition-all duration-300 flex flex-col justify-between">
  <div class="flex items-center justify-between text-[10px] font-bold">
  <span>4. VERIFIED</span>
- <span id="stepIcon4">⏳</span>
+ <span id="stepIcon4">[..]</span>
  </div>
  <span id="stepVerdictText" class="text-[9px] text-zinc-400 mt-1">Pending</span>
  </div>
@@ -1615,14 +1615,14 @@
  resBorder = '#f59e0b';
  resBg = '#381604';
  resFont = '#fde68a';
- resIcon = '⏳';
+ resIcon = '[..]';
  } else if (isShadowBranch) {
  resBorder = '#ef4444';
  resBg = '#3b0d0d';
  resFont = '#fecaca';
  resIcon = '[ALERT]';
  } else if (resourceModule === 'flights') {
- resIcon = '✈️';
+ resIcon = 'API';
  } else if (resourceModule === 'bookings') {
  resIcon = '';
  } else if (resourceModule === 'refunds') {
@@ -2557,7 +2557,7 @@
  navigator.clipboard.writeText(curl).then(() => {
  const copyBtn = document.getElementById('copyText');
  const copyBtnEl = document.getElementById('copyCurlBtn');
- copyBtn.innerText = "COPIED TO CLIPBOARD ✓";
+ copyBtn.innerText = "COPIED TO CLIPBOARD [OK]";
  copyBtnEl.classList.add('border-emerald-600', 'text-emerald-300', 'bg-emerald-950/60');
  copyBtnEl.classList.remove('border-zinc-800', 'text-cyan-400', 'bg-zinc-900');
  
@@ -2626,10 +2626,10 @@
  [step1, step2, step3, step4].forEach(s => {
  if (s) s.className = "p-2 rounded bg-zinc-950/80 border border-zinc-800 text-zinc-500 transition-all duration-300 flex flex-col justify-between";
  });
- if (icon1) icon1.innerText = "⏳";
- if (icon2) icon2.innerText = "⏳";
- if (icon3) icon3.innerText = "⏳";
- if (icon4) icon4.innerText = "⏳";
+ if (icon1) icon1.innerText = "[..]";
+ if (icon2) icon2.innerText = "[..]";
+ if (icon3) icon3.innerText = "[..]";
+ if (icon4) icon4.innerText = "[..]";
  if (verdictText) verdictText.innerText = "Pending";
 
  statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
@@ -2655,7 +2655,7 @@
 
  await new Promise(r => setTimeout(r, 350));
  if (step1) step1.className = "p-2 rounded retest-step-done transition-all duration-300 flex flex-col justify-between";
- if (icon1) icon1.innerText = "✓";
+ if (icon1) icon1.innerText = "[OK]";
 
  // ----------------------------------------------------------------
  // PHASE 2: INJECT CRAFTED PAYLOAD INTO TARGET APP (127.0.0.1:8001)
@@ -2666,7 +2666,7 @@
 
  await new Promise(r => setTimeout(r, 450));
  if (step2) step2.className = "p-2 rounded retest-step-done transition-all duration-300 flex flex-col justify-between";
- if (icon2) icon2.innerText = "✓";
+ if (icon2) icon2.innerText = "[OK]";
 
  // ----------------------------------------------------------------
  // PHASE 3: EVALUATE INVARIANT ASSERTIONS (Price, IDOR, Zombie route)
@@ -2677,7 +2677,7 @@
 
  await new Promise(r => setTimeout(r, 400));
  if (step3) step3.className = "p-2 rounded retest-step-done transition-all duration-300 flex flex-col justify-between";
- if (icon3) icon3.innerText = "✓";
+ if (icon3) icon3.innerText = "[OK]";
 
  // ----------------------------------------------------------------
  // PHASE 4: VERIFICATION CONFIRMED — STILL VULNERABLE
@@ -2698,7 +2698,7 @@
  btn.classList.remove('retest-executing');
  btn.classList.add('retest-confirmed');
  btn.className = "px-5 py-2.5 text-xs mono font-bold rounded border border-red-500 bg-red-600 text-white transition flex items-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.6)] relative overflow-hidden group";
- text.innerHTML = "✓ CONFIRMED STILL VULNERABLE";
+ text.innerHTML = "[OK] CONFIRMED STILL VULNERABLE";
 
  statusDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 animate-ping';
  statusText.className = 'text-red-400 font-bold';
