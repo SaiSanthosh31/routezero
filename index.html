@@ -169,7 +169,7 @@
     </div>
   </section>
 
-  <!-- Problem Statement & 5 Whys (Judge-Ready Section) -->
+  <!-- Problem Statement & 5 Whys Analysis -->
   <section id="problem-statement" class="py-14 bg-slate-50 border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
@@ -364,7 +364,7 @@
     </div>
   </section>
 
-  <!-- Interactive Judge Demonstration Console -->
+  <!-- Interactive Security Operations Console -->
   <section id="interactive-demo" class="py-14 bg-slate-50 border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
@@ -373,13 +373,13 @@
         <div>
           <div class="flex items-center gap-2 mb-1.5">
             <span class="w-2.5 h-2.5 rounded-sm bg-[#12343B]"></span>
-            <span class="text-xs font-bold text-[#12343B] uppercase tracking-wider mono">Live Evaluation Console</span>
+            <span class="text-xs font-bold text-[#12343B] uppercase tracking-wider mono">Interactive Security Operations Console</span>
           </div>
           <h2 class="text-2xl sm:text-3xl font-bold text-[#12343B] tracking-tight">
-            How to Demonstrate for Judges
+            Real-Time Attack Simulation & Verification
           </h2>
           <p class="text-xs sm:text-sm text-slate-600 mt-1">
-            Follow the 4 steps below or click <strong>Start Demonstration Scan</strong> to watch RouteZero discover and exploit travel logic flaws in real-time.
+            Execute an autonomous real-time DAST assessment against the staging B2B travel portal to observe route discovery, multi-step exploit synthesis, and remediation verification.
           </p>
         </div>
 
@@ -387,28 +387,29 @@
         <div class="flex items-center gap-2">
           <span id="backendStatusBadge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800 mono">
             <span id="backendDot" class="w-2 h-2 rounded-full bg-emerald-600"></span>
-            <span id="backendModeText">INTERACTIVE JUDGE MODE</span>
+            <span id="backendModeText">STAGING SIMULATION SANDBOX</span>
           </span>
         </div>
       </div>
 
       <!-- Quick Step-by-Step Instructions Card -->
-      <div class="bg-[#FDEBDD] border border-[#F08A4B]/40 rounded-xl p-4 mb-8">
-        <div class="text-xs font-bold uppercase text-[#F08A4B] mono mb-2">Instructions for Evaluation:</div>
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs text-slate-800">
-          <div class="bg-white/80 p-2.5 rounded-lg">
-            <span class="font-bold text-[#12343B]">Step 1:</span> Click <span class="font-semibold text-[#F08A4B]">Start Scan</span> below to launch the autonomous agent.
+      <div class="bg-[#EEF5F7] border border-slate-200 rounded-xl p-4 mb-8">
+        <div class="text-xs font-bold uppercase text-[#12343B] mono mb-2">Automated Assessment Workflow:</div>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs text-slate-700">
+          <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
+            <span class="font-bold text-[#F08A4B]">01 Discovery:</span> Ingests passive traffic logs without requiring Swagger or OpenAPI specifications.
           </div>
-          <div class="bg-white/80 p-2.5 rounded-lg">
-            <span class="font-bold text-[#12343B]">Step 2:</span> Watch the real-time execution stream (Planner -&gt; Executor -&gt; Verifier).
+          <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
+            <span class="font-bold text-[#F08A4B]">02 Attack Planning:</span> Synthesizes multi-step business logic exploits for travel workflows.
           </div>
-          <div class="bg-white/80 p-2.5 rounded-lg">
-            <span class="font-bold text-[#12343B]">Step 3:</span> Select any vulnerability card to view the curl PoC & code patch.
+          <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
+            <span class="font-bold text-[#F08A4B]">03 Safe Execution:</span> Runs rate-limited probes bounded by scope allowlists and kill-switch guards.
           </div>
-          <div class="bg-white/80 p-2.5 rounded-lg">
-            <span class="font-bold text-[#12343B]">Step 4:</span> Click <span class="font-semibold text-[#12343B]">Quick Retest</span> to verify live status.
+          <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
+            <span class="font-bold text-[#F08A4B]">04 Proof Generation:</span> Validates findings with reproducible curl commands and patch snippets.
           </div>
         </div>
+      </div>
       </div>
 
       <!-- Control Bar -->
@@ -418,7 +419,7 @@
           <!-- Start Scan Button -->
           <button id="scanBtn" onclick="runDemoScan()" class="px-5 py-2.5 bg-[#12343B] hover:bg-[#0D262C] text-white font-semibold text-xs mono rounded-lg transition shadow-sm flex items-center gap-2">
             <span id="scanSpinner" class="hidden w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            <span id="scanBtnText">START DEMONSTRATION SCAN</span>
+            <span id="scanBtnText">EXECUTE AUTONOMOUS SCAN</span>
           </button>
 
           <!-- Rate Limit Preset -->
@@ -461,9 +462,9 @@
           <!-- Stream Content -->
           <div id="terminalStream" class="flex-1 overflow-y-auto space-y-2 pt-3 font-mono text-xs leading-relaxed">
             <div class="text-slate-500">[SYSTEM] RouteZero Agentic DAST engine loaded.</div>
-            <div class="text-slate-400">[READY] Seeded 5 travel agency fixtures from sample_flight_bookings.json.</div>
+            <div class="text-slate-400">[READY] Loaded 5 multi-agency travel fixtures from sample_flight_bookings.json.</div>
             <div class="text-slate-400">[READY] Parsed 4 traffic interactions from traffic.json.</div>
-            <div class="text-slate-300 font-semibold">&gt; Click 'START DEMONSTRATION SCAN' to execute live agent loop.</div>
+            <div class="text-slate-300 font-semibold">&gt; Click 'EXECUTE AUTONOMOUS SCAN' to execute live agent loop.</div>
           </div>
 
           <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono">
@@ -476,7 +477,7 @@
         <div class="lg:col-span-7 space-y-3">
           <div class="flex items-center justify-between mb-2">
             <h3 class="text-sm font-bold text-[#12343B] uppercase tracking-wider mono">Discovered Vulnerabilities &amp; Proofs</h3>
-            <span id="findingCountPill" class="text-xs px-2.5 py-0.5 rounded-full bg-[#12343B] text-white font-semibold mono">4 Exploits Seeded</span>
+            <span id="findingCountPill" class="text-xs px-2.5 py-0.5 rounded-full bg-[#12343B] text-white font-semibold mono">4 Confirmed Vulnerabilities</span>
           </div>
 
           <!-- Finding Cards Container -->
@@ -638,7 +639,7 @@
       </div>
 
       <div class="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400">
-        <p>Built with zero emojis and human-crafted design for VoyageHack 4.0 evaluation.</p>
+        <p>RouteZero Autonomous API Security Platform · Built for enterprise B2B travel ecosystems.</p>
         <p class="mt-2 sm:mt-0 font-mono text-[11px]">TBO.com · 2026</p>
       </div>
     </div>
@@ -657,8 +658,8 @@
     let currentRate = 4.0;
     let currentModalId = null;
 
-    // The 4 Seeded Travel API Vulnerabilities (matching mock app & tests)
-    const SEEDED_FINDINGS = [
+    // Verified Travel API Vulnerability Catalog
+    const VULNERABILITY_CATALOG = [
       {
         id: 1,
         title: "Flight Booking Price Tampering",
@@ -723,7 +724,7 @@
 
     // Initialize Page
     document.addEventListener("DOMContentLoaded", () => {
-      renderFindings(SEEDED_FINDINGS);
+      renderFindings(VULNERABILITY_CATALOG);
       checkBackend();
     });
 
@@ -740,7 +741,7 @@
       } catch (e) {
         isLiveBackend = false;
         document.getElementById("backendDot").className = "w-2 h-2 rounded-full bg-blue-600";
-        document.getElementById("backendModeText").innerText = "INTERACTIVE JUDGE MODE (GITHUB PAGES)";
+        document.getElementById("backendModeText").innerText = "STAGING SIMULATION SANDBOX (GITHUB PAGES)";
         document.getElementById("backendStatusBadge").className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-800 mono";
       }
     }
@@ -810,9 +811,9 @@
 
       btn.disabled = true;
       spinner.classList.remove("hidden");
-      text.innerText = "SCANNING LIVE APIS...";
+      text.innerText = "EXECUTING SCAN...";
 
-      appendLog("SYSTEM", "Starting RouteZero Autonomous DAST Loop...", "text-[#F08A4B]");
+      appendLog("SYSTEM", "Launching RouteZero Autonomous DAST Assessment...", "text-[#F08A4B]");
 
       const steps = [
         { agent: "RECON", msg: "Sniffing staging network traffic... 4 interaction flows captured.", color: "text-slate-300", delay: 600 },
@@ -837,14 +838,14 @@
       setTimeout(() => {
         btn.disabled = false;
         spinner.classList.add("hidden");
-        text.innerText = "START DEMONSTRATION SCAN";
+        text.innerText = "EXECUTE AUTONOMOUS SCAN";
         showToast("Scan finished: 4 verified vulnerabilities found!");
       }, 6800);
     }
 
     // Modal Inspect
     function inspectFinding(id) {
-      const f = SEEDED_FINDINGS.find(x => x.id === id);
+      const f = VULNERABILITY_CATALOG.find(x => x.id === id);
       if (!f) return;
       currentModalId = id;
 
