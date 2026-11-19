@@ -5,6 +5,9 @@ from typing import Optional, List
 app = FastAPI(title="TBO Mock Travel Platform", version="2.4.0")
 
 # In-memory mock database
+import os
+import json
+
 AGENCIES = {
     "AGENCY-001": {"name": "Apex Voyages", "credit": 50000},
     "AGENCY-002": {"name": "BlueSky Travels", "credit": 12000},
@@ -30,6 +33,35 @@ BOOKINGS = {
         "status": "CONFIRMED"
     }
 }
+
+# Dynamically seed from sample_flight_bookings.json if present
+for possible_path in ["sample_flight_bookings.json", "../sample_flight_bookings.json"]:
+    if os.path.exists(possible_path):
+        try:
+            with open(possible_path, "r", encoding="utf-8") as _f:
+                _sample_data = json.load(_f)
+                for _ag in _sample_data.get("agencies", []):
+                    _aid = _ag.get("agency_id")
+                    if _aid and _aid not in AGENCIES:
+                        AGENCIES[_aid] = {"name": _ag.get("agency_name", _aid), "credit": 25000}
+                    for _b in _ag.get("bookings", []):
+                        _bid = _b.get("booking_id")
+                        if _bid and _bid not in BOOKINGS:
+                            _trv = _b.get("traveler", {})
+                            _fl = _b.get("flight", {})
+                            _pr = _b.get("price", {})
+                            BOOKINGS[_bid] = {
+                                "booking_id": _bid,
+                                "agency_id": _aid,
+                                "passenger_name": _trv.get("name", "Unknown Traveler"),
+                                "passport_no": _trv.get("passport_number", "UNKNOWN_PASS"),
+                                "flight": f"{_fl.get('flight_number', 'FL-000')} ({_fl.get('origin', '')} -> {_fl.get('destination', '')})",
+                                "price": float(_pr.get("amount", 5000)),
+                                "status": _b.get("status", "CONFIRMED").upper()
+                            }
+        except Exception as _e:
+            pass
+        break
 
 class BookingRequest(BaseModel):
     agency_id: str

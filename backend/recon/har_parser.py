@@ -172,23 +172,17 @@ class HARParser:
             }
 
         log = har_dict.get("log")
-        if not isinstance(log, dict):
+        if isinstance(log, dict) and isinstance(log.get("entries"), list):
+            entries = log.get("entries")
+        elif isinstance(har_dict.get("entries"), list):
+            entries = har_dict.get("entries")
+        else:
             return {
                 "endpoints": [],
                 "total_entries": 0,
                 "valid_entries": 0,
                 "skipped_static": 0,
-                "errors": ["Missing or invalid 'log' field in HAR"]
-            }
-
-        entries = log.get("entries")
-        if not isinstance(entries, list):
-            return {
-                "endpoints": [],
-                "total_entries": 0,
-                "valid_entries": 0,
-                "skipped_static": 0,
-                "errors": ["Missing or invalid 'log.entries' array in HAR"]
+                "errors": ["Missing or invalid 'log.entries' or 'entries' array in traffic data"]
             }
 
         total_entries = len(entries)

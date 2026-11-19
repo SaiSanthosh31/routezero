@@ -6,7 +6,7 @@ import webbrowser
 
 def main():
     print("=" * 60)
-    print("🚀 Starting RouteZero — Autonomous Travel API DAST Platform")
+    print("Starting RouteZero - Autonomous Travel API DAST Platform")
     print("=" * 60)
 
     # 1. Start Target Travel App (Port 8001)
@@ -24,9 +24,9 @@ def main():
 
     time.sleep(1.5)
 
-    print("\n✅ Platform Ready!")
-    print("   🌐 Dashboard:   http://127.0.0.1:8000")
-    print("   🎯 Target API:  http://127.0.0.1:8001/docs")
+    print("\n[OK] Platform Ready!")
+    print("   Dashboard:   http://127.0.0.1:8000")
+    print("   Target API:  http://127.0.0.1:8001/docs")
     print("\nPress Ctrl+C to stop both servers.\n")
 
     try:
