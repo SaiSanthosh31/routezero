@@ -500,33 +500,34 @@ def build_exact_template_deck():
         ("Sai Santhosh", "Lead Backend & AI Engine", "Built LLM attack planner, safe exploit executor, verifier proof engine & core APIs."),
         ("Dharani", "Backend & Recon Engine", "Built traffic sniffer, HAR parser, zombie & shadow API detector, and SQLite models."),
         ("Arun Hitesh", "Frontend Command Center", "Built security operations dashboard, live activity stream, and emergency kill switch."),
-        ("Mythreyan", "Frontend API Topology & PoC", "Built visual endpoint topology graph, vulnerability inspector, and retest trigger.")
+        ("Mythreyan", "Frontend API Topology & PoC", "Built visual endpoint topology graph, vulnerability inspector, and retest trigger."),
+        ("Ravi Kiran", "Test Data & Traffic Simulation", "Built synthetic flight booking datasets, HAR traffic interaction flows & demo fixtures.")
     ]
 
     for m_i, (name, role, contrib) in enumerate(team):
-        card_y = Inches(1.15 + m_i * 1.15)
+        card_y = Inches(1.08 + m_i * 0.95)
         # Left Tag Pill
-        add_shape(s4, Inches(5.2), card_y, Inches(1.8), Inches(0.95), C_TEAL_DARK, rounded=True)
-        tx_name = s4.shapes.add_textbox(Inches(5.25), card_y + Inches(0.12), Inches(1.7), Inches(0.75))
+        add_shape(s4, Inches(5.2), card_y, Inches(1.85), Inches(0.85), C_TEAL_DARK, rounded=True)
+        tx_name = s4.shapes.add_textbox(Inches(5.25), card_y + Inches(0.08), Inches(1.75), Inches(0.7))
         tx_name.text_frame.word_wrap = True
         pn0 = tx_name.text_frame.paragraphs[0]
         pn0.text = name
-        pn0.font.size = Pt(11)
+        pn0.font.size = Pt(10.5)
         pn0.font.bold = True
         pn0.font.color.rgb = C_WHITE
         pn1 = tx_name.text_frame.add_paragraph()
         pn1.text = role
-        pn1.font.size = Pt(8.5)
+        pn1.font.size = Pt(8.0)
         pn1.font.color.rgb = C_CORAL
 
         # Right Content Container
-        add_shape(s4, Inches(7.1), card_y, Inches(5.6), Inches(0.95), C_ROW_BG, rounded=True)
-        tx_cont = s4.shapes.add_textbox(Inches(7.2), card_y + Inches(0.12), Inches(5.4), Inches(0.75))
+        add_shape(s4, Inches(7.15), card_y, Inches(5.55), Inches(0.85), C_ROW_BG, rounded=True)
+        tx_cont = s4.shapes.add_textbox(Inches(7.25), card_y + Inches(0.08), Inches(5.35), Inches(0.7))
         tx_cont.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
         tx_cont.text_frame.word_wrap = True
         pc0 = tx_cont.text_frame.paragraphs[0]
         pc0.text = contrib
-        pc0.font.size = Pt(10)
+        pc0.font.size = Pt(9.5)
         pc0.font.color.rgb = C_TEXT_DARK
 
     # Bottom Links Box

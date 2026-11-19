@@ -54,5 +54,11 @@
 ## SLIDE 4: Thank You Slide
 * **Heading:** Thank You
 * **Subheading:** RouteZero — Autonomous Real-Time AppSec Agent
+* **Team Members & Contributions:**
+  * **Sai Santhosh:** Lead Backend & AI Engine (LLM attack planner, safe executor, verifier proof engine & core APIs)
+  * **Dharani:** Backend & Recon Engine (Traffic sniffer, HAR parser, zombie & shadow API classifier, SQLite models)
+  * **Arun Hitesh:** Frontend Command Center (SOC dashboard, live activity stream, emergency kill switch)
+  * **Mythreyan:** Frontend Topology & PoC (API topology graph, vulnerability inspector, retest triggers)
+  * **Ravi Kiran:** Test Data & Traffic Simulation (Synthetic flight booking datasets, HAR traffic fixtures & demo telemetry)
 * **Live Interactive Demo:** https://saisanthosh31.github.io/routezero/
 * **GitHub Repository:** https://github.com/SaiSanthosh31/routezero
