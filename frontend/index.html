@@ -417,6 +417,19 @@
         
         <div class="flex flex-wrap items-center gap-3">
           <!-- Start Scan Button -->
+          <!-- Target Host Link Input -->
+          <div class="flex items-center gap-1.5 text-xs text-slate-700">
+            <span class="font-semibold text-slate-600">Target Host:</span>
+            <input 
+              id="targetHostInput" 
+              type="text" 
+              value="http://127.0.0.1:8001" 
+              placeholder="e.g. http://127.0.0.1:8001 or https://staging.travelco.com"
+              class="px-2.5 py-1.5 text-xs mono rounded-lg border border-slate-300 bg-slate-50 text-slate-800 w-52 sm:w-64 focus:outline-none focus:ring-1 focus:ring-[#12343B]"
+              title="Enter any travel API host link or staging environment URL to assess"
+            />
+          </div>
+
           <button id="scanBtn" onclick="runDemoScan()" class="px-5 py-2.5 bg-[#12343B] hover:bg-[#0D262C] text-white font-semibold text-xs mono rounded-lg transition shadow-sm flex items-center gap-2">
             <span id="scanSpinner" class="hidden w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             <span id="scanBtnText">EXECUTE AUTONOMOUS SCAN</span>
@@ -468,7 +481,7 @@
           </div>
 
           <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono">
-            <span>Target: http://127.0.0.1:8001</span>
+            <span id="termTargetHost">Target: http://127.0.0.1:8001</span>
             <span id="logCounter">3 log events</span>
           </div>
         </div>
@@ -814,7 +827,9 @@
       spinner.classList.remove("hidden");
       text.innerText = "EXECUTING SCAN...";
 
-      appendLog("SYSTEM", "Launching RouteZero Autonomous DAST Assessment...", "text-[#F08A4B]");
+      const targetHost = document.getElementById("targetHostInput").value.trim() || "http://127.0.0.1:8001";
+      document.getElementById("termTargetHost").innerText = "Target: " + targetHost;
+      appendLog("SYSTEM", `Launching Autonomous DAST Assessment against ${targetHost}...`, "text-[#F08A4B]");
 
       const steps = [
         { agent: "RECON", msg: "Sniffing staging network traffic... 4 interaction flows captured.", color: "text-slate-300", delay: 600 },
@@ -827,7 +842,7 @@
         { agent: "EXECUTOR", msg: "Probing deprecated route /api/v1/legacy/discounts...", color: "text-slate-300", delay: 4800 },
         { agent: "VERIFIER", msg: "EXPLOIT CONFIRMED: Unauthenticated 50% discount code leaked.", color: "text-amber-400 font-bold", delay: 5400 },
         { agent: "VERIFIER", msg: "EXPLOIT CONFIRMED: Internal DB connection exposed on /api/v2/internal/admin/stats.", color: "text-amber-400 font-bold", delay: 6000 },
-        { agent: "SYSTEM", "Scan Complete. 4/4 vulnerabilities verified. Generated curl proofs and code patches.", color: "text-emerald-400 font-bold", delay: 6600 },
+        { agent: "SYSTEM", msg: "Scan Complete. 4/4 vulnerabilities verified. Generated curl proofs and code patches.", color: "text-emerald-400 font-bold", delay: 6600 },
       ];
 
       steps.forEach(st => {
