@@ -423,10 +423,10 @@
             <input 
               id="targetHostInput" 
               type="text" 
-              value="http://127.0.0.1:8001" 
-              placeholder="e.g. http://127.0.0.1:8001 or https://staging.travelco.com"
+              value="https://staging.tbo.com" 
+              placeholder="e.g. https://staging.tbo.com or https://api.makemytrip.com"
               class="px-2.5 py-1.5 text-xs mono rounded-lg border border-slate-300 bg-slate-50 text-slate-800 w-52 sm:w-64 focus:outline-none focus:ring-1 focus:ring-[#12343B]"
-              title="Enter any travel API host link or staging environment URL to assess"
+              title="Enter any travel API host — TBO staging, MakeMyTrip, Cleartrip, Yatra, Goibibo, etc."
             />
           </div>
 
@@ -481,7 +481,7 @@
           </div>
 
           <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono">
-            <span id="termTargetHost">Target: http://127.0.0.1:8001</span>
+            <span id="termTargetHost">Target: https://staging.tbo.com</span>
             <span id="logCounter">3 log events</span>
           </div>
         </div>
@@ -673,6 +673,10 @@
     let currentModalId = null;
 
     // Verified Travel API Vulnerability Catalog
+    function getTargetHost() {
+      return (document.getElementById("targetHostInput") && document.getElementById("targetHostInput").value.trim()) || "https://staging.tbo.com";
+    }
+
     const VULNERABILITY_CATALOG = [
       {
         id: 1,
@@ -682,8 +686,9 @@
         endpoint: "/api/v2/bookings/create",
         method: "POST",
         description: "The endpoint accepts client-supplied pricing without server-side validation. An attacker can set flight/hotel booking prices to $1.00.",
-        business_impact: "Direct financial revenue loss and fraudulent ticket issuance across TBO inventory.",
-        reproduction_curl: "curl -X POST http://127.0.0.1:8001/api/v2/bookings/create -H 'Content-Type: application/json' -d '{\"agency_id\":\"AGENCY-001\",\"flight_number\":\"AI-202\",\"passenger_name\":\"John Doe\",\"passport_no\":\"Z8912345\",\"price\":1.0}'",
+        business_impact: "Direct financial revenue loss and fraudulent ticket issuance across the target travel platform.",
+        curl_path: "/api/v2/bookings/create -H 'Content-Type: application/json' -d '{\"agency_id\":\"AGENCY-001\",\"flight_number\":\"AI-202\",\"passenger_name\":\"John Doe\",\"passport_no\":\"Z8912345\",\"price\":1.0}'",
+        curl_method: "POST",
         proof_request: '{\\n  "agency_id": "AGENCY-001",\\n  "flight_number": "AI-202",\\n  "passenger_name": "John Doe",\\n  "passport_no": "Z8912345",\\n  "price": 1.0\\n}',
         proof_response: '{\\n  "status": "success",\\n  "message": "Booking created",\\n  "booking": {\\n    "booking_id": "BK-1003",\\n    "price": 1.0,\\n    "status": "CONFIRMED"\\n  }\\n}',
         remediation_code: "# FIX: Calculate verified pricing server-side\\nfare = flight_service.calculate_fare(req.flight_number)\\nbooking.price = fare.total_amount",
@@ -698,7 +703,8 @@
         method: "GET",
         description: "Booking records are accessible across agency boundaries without tenancy verification. Passenger passport numbers and travel details are leaked.",
         business_impact: "Severe breach of India DPDP Act 2023. Passport details and passenger records exposed to unauthorized travel agencies.",
-        reproduction_curl: "curl -X GET http://127.0.0.1:8001/api/v2/bookings/BK-1001 -H 'X-Agency-Id: AGENCY-002'",
+        curl_path: "/api/v2/bookings/BK-1001 -H 'X-Agency-Id: AGENCY-002'",
+        curl_method: "GET",
         proof_request: 'Headers: {\\n  "X-Agency-Id": "AGENCY-002"\\n}\\nTarget: /api/v2/bookings/BK-1001',
         proof_response: '{\\n  "status": "success",\\n  "booking": {\\n    "booking_id": "BK-1001",\\n    "agency_id": "AGENCY-001",\\n    "passenger_name": "John Doe",\\n    "passport_no": "Z8912345"\\n  }\\n}',
         remediation_code: "# FIX: Enforce tenant ownership barrier\\nif booking.agency_id != authenticated_user.agency_id:\\n    raise HTTPException(status_code=403, detail='Unauthorized tenant access')",
@@ -713,7 +719,8 @@
         method: "GET",
         description: "Deprecated /v1 route is still alive in production staging and serves confidential 50% discount codes without authentication.",
         business_impact: "Margin erosion via unauthorized voucher extraction; unmonitored legacy attack surface.",
-        reproduction_curl: "curl -X GET http://127.0.0.1:8001/api/v1/legacy/discounts",
+        curl_path: "/api/v1/legacy/discounts",
+        curl_method: "GET",
         proof_request: "GET /api/v1/legacy/discounts (No auth required)",
         proof_response: '{\\n  "warning": "DEPRECATED ENDPOINT",\\n  "promo_code": "SECRET_STAFF_50_OFF",\\n  "discount_percent": 50\\n}',
         remediation_code: "# FIX: Decommission deprecated /v1/ controller\\n@app.get('/api/v1/legacy/discounts')\\ndef legacy_discount():\\n    raise HTTPException(status_code=410, detail='Route decommissioned')",
@@ -728,9 +735,10 @@
         method: "GET",
         description: "Undocumented internal debug endpoint exposed to the internet. Discloses database connection strings and internal financial revenue totals.",
         business_impact: "Internal architecture mapping and credential leakage leading to privilege escalation.",
-        reproduction_curl: "curl -X GET http://127.0.0.1:8001/api/v2/internal/admin/stats",
+        curl_path: "/api/v2/internal/admin/stats",
+        curl_method: "GET",
         proof_request: "GET /api/v2/internal/admin/stats",
-        proof_response: '{\\n  "service": "tbo-booking-engine",\\n  "environment": "production-like-staging",\\n  "total_revenue": 2050,\\n  "db_connection": "sqlite:///tbo_travel.db"\\n}',
+        proof_response: '{\\n  "service": "travel-booking-engine",\\n  "environment": "production-like-staging",\\n  "total_revenue": 2050,\\n  "db_connection": "sqlite:///travel_core.db"\\n}',
         remediation_code: "# FIX: Bind internal admin routes to localhost / private VPC\\n# Enforce role-based access control (RBAC)\\nif not current_user.is_superuser:\\n    raise HTTPException(status_code=403, detail='Forbidden')",
         status: "CONFIRMED_VULNERABLE"
       }
@@ -827,22 +835,22 @@
       spinner.classList.remove("hidden");
       text.innerText = "EXECUTING SCAN...";
 
-      const targetHost = document.getElementById("targetHostInput").value.trim() || "http://127.0.0.1:8001";
+      const targetHost = document.getElementById("targetHostInput").value.trim() || "https://staging.tbo.com";
       document.getElementById("termTargetHost").innerText = "Target: " + targetHost;
       appendLog("SYSTEM", `Launching Autonomous DAST Assessment against ${targetHost}...`, "text-[#F08A4B]");
 
       const steps = [
-        { agent: "RECON", msg: "Sniffing staging network traffic... 4 interaction flows captured.", color: "text-slate-300", delay: 600 },
-        { agent: "RECON", msg: "Identified 5 endpoints (3 Active, 1 Zombie /v1, 1 Shadow Debug).", color: "text-[#2A9D8F]", delay: 1100 },
-        { agent: "PLANNER", msg: "Synthesizing contextual attack plan for B2B booking logic...", color: "text-amber-300", delay: 1700 },
-        { agent: "EXECUTOR", msg: "Testing /api/v2/bookings/create with price=1.00 (rate-limited 4 req/s)...", color: "text-slate-300", delay: 2300 },
-        { agent: "VERIFIER", msg: "EXPLOIT CONFIRMED: Price overridden to $1.00! Status 200 OK received.", color: "text-red-400 font-bold", delay: 3000 },
-        { agent: "EXECUTOR", msg: "Testing cross-tenant access on /api/v2/bookings/BK-1001 with AGENCY-002...", color: "text-slate-300", delay: 3600 },
-        { agent: "VERIFIER", msg: "EXPLOIT CONFIRMED: IDOR passenger passport PII leaked! India DPDP violation.", color: "text-red-400 font-bold", delay: 4200 },
-        { agent: "EXECUTOR", msg: "Probing deprecated route /api/v1/legacy/discounts...", color: "text-slate-300", delay: 4800 },
-        { agent: "VERIFIER", msg: "EXPLOIT CONFIRMED: Unauthenticated 50% discount code leaked.", color: "text-amber-400 font-bold", delay: 5400 },
-        { agent: "VERIFIER", msg: "EXPLOIT CONFIRMED: Internal DB connection exposed on /api/v2/internal/admin/stats.", color: "text-amber-400 font-bold", delay: 6000 },
-        { agent: "SYSTEM", msg: "Scan Complete. 4/4 vulnerabilities verified. Generated curl proofs and code patches.", color: "text-emerald-400 font-bold", delay: 6600 },
+        { agent: "RECON", msg: `Initiating passive traffic analysis on ${targetHost}...`, color: "text-slate-300", delay: 600 },
+        { agent: "RECON", msg: "Identified 5 endpoints (3 Active, 1 Zombie /v1, 1 Shadow Debug route).", color: "text-[#2A9D8F]", delay: 1100 },
+        { agent: "PLANNER", msg: "Synthesizing travel-domain attack plan: price fields, booking IDs, tenant headers...", color: "text-amber-300", delay: 1700 },
+        { agent: "EXECUTOR", msg: `Testing ${targetHost}/api/v2/bookings/create with price=1.00 (rate-limited ${currentRate} req/s)...`, color: "text-slate-300", delay: 2300 },
+        { agent: "VERIFIER", msg: "EXPLOIT CONFIRMED: Booking accepted at $1.00 — price overridden client-side.", color: "text-red-400 font-bold", delay: 3000 },
+        { agent: "EXECUTOR", msg: `Testing cross-tenant IDOR on ${targetHost}/api/v2/bookings/BK-1001 with AGENCY-002 header...`, color: "text-slate-300", delay: 3600 },
+        { agent: "VERIFIER", msg: "EXPLOIT CONFIRMED: Passenger passport PII returned across agency boundary. DPDP violation.", color: "text-red-400 font-bold", delay: 4200 },
+        { agent: "EXECUTOR", msg: `Probing deprecated route ${targetHost}/api/v1/legacy/discounts...`, color: "text-slate-300", delay: 4800 },
+        { agent: "VERIFIER", msg: "EXPLOIT CONFIRMED: Zombie route live — 50% discount code extracted without authentication.", color: "text-amber-400 font-bold", delay: 5400 },
+        { agent: "VERIFIER", msg: `EXPLOIT CONFIRMED: Shadow admin route at ${targetHost}/api/v2/internal/admin/stats exposes DB credentials.`, color: "text-amber-400 font-bold", delay: 6000 },
+        { agent: "SYSTEM", msg: "Scan Complete. 4/4 vulnerabilities verified with curl proofs and code patches.", color: "text-emerald-400 font-bold", delay: 6600 },
       ];
 
       steps.forEach(st => {
@@ -865,13 +873,16 @@
       if (!f) return;
       currentModalId = id;
 
+      const host = getTargetHost();
+      const curlCmd = `curl -X ${f.curl_method} ${host}${f.curl_path}`;
+
       document.getElementById("mSeverity").innerText = f.severity;
       document.getElementById("mSeverity").className = f.severity === "CRITICAL" ? "text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-red-600 text-white mono" : "text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-600 text-white mono";
       document.getElementById("mCwe").innerText = f.cwe_id;
       document.getElementById("mTitle").innerText = f.title;
       document.getElementById("mEndpoint").innerText = `${f.method} ${f.endpoint}`;
       document.getElementById("mImpact").innerText = f.business_impact;
-      document.getElementById("mCurl").innerText = f.reproduction_curl;
+      document.getElementById("mCurl").innerText = curlCmd;
       document.getElementById("mReqProof").innerText = f.proof_request;
       document.getElementById("mResProof").innerText = f.proof_response;
       document.getElementById("mRemediation").innerText = f.remediation_code;
