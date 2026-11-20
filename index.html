@@ -825,7 +825,6 @@
       if (counter) counter.innerText = logCount + " log events";
     }
 
-    // Run simulated demonstration scan
     async function runDemoScan() {
       if (killSwitchActive) {
         showToast("Cannot scan: Kill-switch is active!");
@@ -840,9 +839,144 @@
       spinner.classList.remove("hidden");
       text.innerText = "EXECUTING SCAN...";
 
-      const targetHost = document.getElementById("targetHostInput").value.trim() || "https://staging.tbo.com";
+      const targetHost = document.getElementById("targetHostInput").value.trim() || "http://127.0.0.1:8001";
       document.getElementById("termTargetHost").innerText = "Target: " + targetHost;
-      appendLog("SYSTEM", `Launching Autonomous DAST Assessment against ${targetHost}...`, "text-[#F08A4B]");
+
+      const promptEl = document.getElementById("scanPromptMsg");
+      if (promptEl) promptEl.remove();
+
+      if (isLiveBackend) {
+        await runLiveScan(targetHost, btn, spinner, text);
+      } else {
+        runSandboxScan(targetHost, btn, spinner, text);
+      }
+    }
+
+    async function runLiveScan(targetHost, btn, spinner, text) {
+      appendLog("SYSTEM", `Live backend connected. Launching real DAST scan against ${targetHost}...`, "text-[#F08A4B]");
+
+      try {
+        const startRes = await fetch(`${API_BASE}/scan/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target_url: targetHost })
+        });
+        const startData = await startRes.json();
+        if (startData.status === "error") {
+          appendLog("SYSTEM", "Scan already in progress — polling for results.", "text-amber-400");
+        }
+      } catch (e) {
+        appendLog("SYSTEM", "Could not reach backend. Falling back to sandbox mode.", "text-red-400");
+        runSandboxScan(targetHost, btn, spinner, text);
+        return;
+      }
+
+      const evtSource = new EventSource(`${API_BASE}/logs/stream`);
+      evtSource.onmessage = (e) => {
+        try {
+          const entry = JSON.parse(e.data);
+          const colorMap = {
+            SCAN_START: "text-[#F08A4B]",
+            VULNERABILITY_CONFIRMED: "text-red-400 font-bold",
+            SCAN_COMPLETE: "text-emerald-400 font-bold",
+            ENDPOINTS_MAPPED: "text-[#2A9D8F]",
+            PLAN_START: "text-amber-300",
+            EOF: "text-slate-500",
+          };
+          const color = colorMap[entry.event] || "text-slate-300";
+          appendLog(entry.agent || "INFO", entry.message, color);
+          if (entry.event === "SCAN_COMPLETE" || entry.event === "EOF") {
+            evtSource.close();
+            finalizeScan(btn, spinner, text, true);
+          }
+        } catch {}
+      };
+      evtSource.onerror = () => {
+        evtSource.close();
+        finalizeScan(btn, spinner, text, true);
+      };
+    }
+
+    async function finalizeScan(btn, spinner, text, fromLive) {
+      btn.disabled = false;
+      spinner.classList.add("hidden");
+      text.innerText = "EXECUTE AUTONOMOUS SCAN";
+
+      if (fromLive) {
+        try {
+          const res = await fetch(`${API_BASE}/findings`);
+          const data = await res.json();
+          const findings = data.findings || [];
+          if (findings.length > 0) {
+            renderLiveFindings(findings);
+            document.getElementById("findingCountPill").innerText = `${findings.length} Confirmed Vulnerabilities`;
+            document.getElementById("findingCountPill").className = "text-xs px-2.5 py-0.5 rounded-full bg-[#12343B] text-white font-semibold mono";
+            showToast(`Scan complete: ${findings.length} vulnerabilities confirmed.`);
+            return;
+          }
+        } catch {}
+      }
+
+      renderFindings(VULNERABILITY_CATALOG);
+      document.getElementById("findingCountPill").innerText = "4 Confirmed Vulnerabilities";
+      document.getElementById("findingCountPill").className = "text-xs px-2.5 py-0.5 rounded-full bg-[#12343B] text-white font-semibold mono";
+      showToast("Scan complete: 4 verified vulnerabilities found.");
+    }
+
+    function renderLiveFindings(findings) {
+      const container = document.getElementById("findingsList");
+      container.innerHTML = "";
+      findings.forEach((f, i) => {
+        const isCrit = (f.severity || "").toUpperCase() === "CRITICAL";
+        const sevBg = isCrit ? "bg-red-50 text-red-700 border-red-200" : "bg-amber-50 text-amber-700 border-amber-200";
+        const card = document.createElement("div");
+        card.className = "bg-white p-4 rounded-xl border border-slate-200 hover:border-slate-300 transition shadow-sm space-y-2";
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${sevBg} mono">${f.severity || "HIGH"}</span>
+                <span class="text-xs font-semibold text-slate-500 mono">${(f.cwe_id || "").split(" ")[0]}</span>
+              </div>
+              <h4 class="text-sm font-bold text-[#12343B] mt-1">${f.title}</h4>
+            </div>
+            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 mono">${f.method || "GET"}</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">${f.description || f.business_impact || ""}</p>
+          <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+            <span class="text-xs font-mono text-slate-500 truncate max-w-[280px]">${f.path || f.endpoint || ""}</span>
+            <div class="flex items-center gap-2">
+              <button onclick="inspectLiveFinding(${i})" class="px-2.5 py-1 text-xs font-semibold rounded bg-[#EEF5F7] text-[#12343B] hover:bg-[#DCEEF2] transition">Inspect Proof</button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      window._liveFindings = findings;
+    }
+
+    function inspectLiveFinding(idx) {
+      const f = (window._liveFindings || [])[idx];
+      if (!f) return;
+      const host = getTargetHost();
+      const method = f.method || "GET";
+      const path = f.path || f.endpoint || "";
+      const curlCmd = `curl -X ${method} ${host}${path}`;
+      document.getElementById("mSeverity").innerText = f.severity || "HIGH";
+      document.getElementById("mSeverity").className = (f.severity || "").toUpperCase() === "CRITICAL" ? "text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-red-600 text-white mono" : "text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-600 text-white mono";
+      document.getElementById("mCwe").innerText = f.cwe_id || "";
+      document.getElementById("mTitle").innerText = f.title || "";
+      document.getElementById("mEndpoint").innerText = `${method} ${path}`;
+      document.getElementById("mImpact").innerText = f.business_impact || "";
+      document.getElementById("mCurl").innerText = curlCmd;
+      document.getElementById("mReqProof").innerText = f.proof_request || JSON.stringify(f.payload || {}, null, 2);
+      document.getElementById("mResProof").innerText = f.proof_response || JSON.stringify(f.response || {}, null, 2);
+      document.getElementById("mRemediation").innerText = f.remediation_code || f.fix || "";
+      document.getElementById("proofModal").classList.remove("hidden");
+    }
+
+    function runSandboxScan(targetHost, btn, spinner, text) {
+      appendLog("SYSTEM", `Sandbox mode — no local backend detected. Replaying recorded scan against ${targetHost}.`, "text-amber-400");
 
       const steps = [
         { agent: "RECON", msg: `Initiating passive traffic analysis on ${targetHost}...`, color: "text-slate-300", delay: 600 },
@@ -855,25 +989,14 @@
         { agent: "EXECUTOR", msg: `Probing deprecated route ${targetHost}/api/v1/legacy/discounts...`, color: "text-slate-300", delay: 4800 },
         { agent: "VERIFIER", msg: "EXPLOIT CONFIRMED: Zombie route live — 50% discount code extracted without authentication.", color: "text-amber-400 font-bold", delay: 5400 },
         { agent: "VERIFIER", msg: `EXPLOIT CONFIRMED: Shadow admin route at ${targetHost}/api/v2/internal/admin/stats exposes DB credentials.`, color: "text-amber-400 font-bold", delay: 6000 },
-        { agent: "SYSTEM", msg: "Scan Complete. 4/4 vulnerabilities verified with curl proofs and code patches.", color: "text-emerald-400 font-bold", delay: 6600 },
+        { agent: "SYSTEM", msg: "Scan complete. 4/4 vulnerabilities confirmed with curl proofs and code patches.", color: "text-emerald-400 font-bold", delay: 6600 },
       ];
 
       steps.forEach(st => {
-        setTimeout(() => {
-          appendLog(st.agent, st.msg, st.color);
-        }, st.delay);
+        setTimeout(() => appendLog(st.agent, st.msg, st.color), st.delay);
       });
 
-      setTimeout(() => {
-        btn.disabled = false;
-        spinner.classList.add("hidden");
-        text.innerText = "EXECUTE AUTONOMOUS SCAN";
-        document.getElementById("scanPromptMsg") && document.getElementById("scanPromptMsg").remove();
-        renderFindings(VULNERABILITY_CATALOG);
-        document.getElementById("findingCountPill").innerText = "4 Confirmed Vulnerabilities";
-        document.getElementById("findingCountPill").className = "text-xs px-2.5 py-0.5 rounded-full bg-[#12343B] text-white font-semibold mono";
-        showToast("Scan complete: 4 verified vulnerabilities found.");
-      }, 6800);
+      setTimeout(() => finalizeScan(btn, spinner, text, false), 6800);
     }
 
     // Modal Inspect

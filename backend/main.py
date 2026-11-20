@@ -1,5 +1,5 @@
 from fastapi import FastAPI, BackgroundTasks, Query, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any, Union
@@ -7,6 +7,7 @@ import threading
 import time
 import os
 import json
+import asyncio
 
 # Database helpers and recon utilities
 from db.database import (
@@ -58,7 +59,11 @@ SCAN_STATE = {
     "last_scan_time": None,
     "scanned_count": 0,
     "vulns_found": 0,
+    "target_url": "http://127.0.0.1:8001",
 }
+
+LOG_BUFFER: List[Dict] = []
+LOG_BUFFER_MAX = 200
 
 # Seed endpoints to discover (Active, Zombie, Shadow)
 SEED_DISCOVERY_ENDPOINTS = [
@@ -70,27 +75,46 @@ SEED_DISCOVERY_ENDPOINTS = [
     {"path": "/api/v2/internal/admin/stats", "method": "GET", "category": "shadow", "params": {}},
 ]
 
-def run_dast_scan_workflow():
+def push_log(agent: str, event: str, message: str):
+    entry = {
+        "timestamp": time.strftime("%H:%M:%S"),
+        "agent": agent,
+        "event": event,
+        "message": message,
+    }
+    LOG_BUFFER.append(entry)
+    if len(LOG_BUFFER) > LOG_BUFFER_MAX:
+        LOG_BUFFER.pop(0)
+    log_activity(agent, event, message)
+
+def run_dast_scan_workflow(target_url: str = None):
     global SCAN_STATE
+    target = (target_url or TARGET_APP_URL).rstrip("/")
     SCAN_STATE["is_running"] = True
-    log_activity("Orchestrator", "SCAN_START", f"Targeting platform at {TARGET_APP_URL}")
+    SCAN_STATE["target_url"] = target
+    LOG_BUFFER.clear()
+
+    push_log("SYSTEM", "SCAN_START", f"RouteZero Agentic DAST engine initialised.")
+    push_log("RECON", "TRAFFIC_LOAD", f"Initiating passive traffic analysis on {target}...")
+
+    safety = SafetyGuard(allowed_hosts=["127.0.0.1:8001", "localhost:8001"])
+    parsed_host = target.replace("http://", "").replace("https://", "").split("/")[0]
+    safety.allowed_hosts = [parsed_host, "127.0.0.1:8001", "localhost:8001"]
 
     planner = AttackPlanner()
-    executor = ExploitExecutor(base_url=TARGET_APP_URL, safety_guard=global_safety_guard)
+    executor = ExploitExecutor(base_url=target, safety_guard=safety)
     verifier = VerifierAgent()
 
     found_count = 0
     scanned_count = 0
 
-    # Retrieve discovered non-ignored endpoints from database; fallback to seed list if DB is empty
     db_endpoints = get_all_endpoints(include_ignored=False)
     if not db_endpoints:
-        log_activity("Orchestrator", "SEED_FALLBACK", "No endpoints in database. Seeding baseline endpoints.")
+        push_log("RECON", "SEED_FALLBACK", "No endpoints in database — seeding baseline travel API endpoints.")
         for ep in SEED_DISCOVERY_ENDPOINTS:
             save_endpoint(ep["path"], ep["method"], ep["category"], ep["params"])
         db_endpoints = get_all_endpoints(include_ignored=False)
 
-    # Deduplicate endpoints by (method, path) to prevent redundant scanning
     seen = set()
     endpoints_to_scan = []
     for ep in db_endpoints:
@@ -107,28 +131,30 @@ def run_dast_scan_workflow():
             ep_dict["params"] = params
             endpoints_to_scan.append(ep_dict)
 
+    push_log("RECON", "ENDPOINTS_MAPPED", f"Identified {len(endpoints_to_scan)} endpoints — active, zombie, and shadow routes.")
+    push_log("PLANNER", "PLAN_START", f"Synthesising travel-domain attack plan: price fields, booking IDs, tenant headers...")
+
     for ep in endpoints_to_scan:
         scanned_count += 1
         save_endpoint(ep["path"], ep["method"], ep["category"], ep["params"])
-        log_activity("ReconAgent", "ENDPOINT_MAPPED", f"{ep['method']} {ep['path']} [{ep['category'].upper()}]")
+        push_log("EXECUTOR", "ENDPOINT_PROBE", f"Probing {ep['method']} {target}{ep['path']}...")
 
-        # Plan targeted attacks
         attacks = planner.plan_attacks(ep)
         for atk in attacks:
-            log_activity("AttackPlanner", "PLAN_GENERATED", f"Attack: {atk['name']} on {atk['path']}")
+            push_log("EXECUTOR", "ATTACK_FIRE", f"Testing: {atk['name']} on {atk['path']}")
             exec_res = executor.execute(atk)
             finding = verifier.verify(atk, exec_res)
             if finding:
                 found_count += 1
                 save_finding(finding)
-                log_activity("VerifierAgent", "VULNERABILITY_CONFIRMED", f"[{finding['severity']}] {finding['title']}")
+                push_log("VERIFIER", "VULNERABILITY_CONFIRMED", f"EXPLOIT CONFIRMED [{finding['severity']}]: {finding['title']}")
         time.sleep(0.3)
 
     SCAN_STATE["is_running"] = False
     SCAN_STATE["last_scan_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
     SCAN_STATE["scanned_count"] = scanned_count
     SCAN_STATE["vulns_found"] = found_count
-    log_activity("Orchestrator", "SCAN_COMPLETE", f"Scan finished. Endpoints: {scanned_count}, Vulnerabilities: {found_count}")
+    push_log("SYSTEM", "SCAN_COMPLETE", f"Scan complete. {scanned_count} endpoints scanned, {found_count} vulnerabilities confirmed.")
 
 @app.get("/", response_class=HTMLResponse)
 def root():
@@ -147,12 +173,31 @@ def root():
 def get_status():
     return SCAN_STATE
 
+class ScanStartPayload(BaseModel):
+    target_url: Optional[str] = None
+
 @app.post("/api/scan/start")
-def start_scan(background_tasks: BackgroundTasks):
+def start_scan(background_tasks: BackgroundTasks, payload: Optional[ScanStartPayload] = None):
     if SCAN_STATE["is_running"]:
         return {"status": "error", "message": "Scan already in progress"}
-    background_tasks.add_task(run_dast_scan_workflow)
-    return {"status": "started", "message": "Autonomous DAST scan launched"}
+    target = (payload.target_url if payload and payload.target_url else TARGET_APP_URL).rstrip("/")
+    background_tasks.add_task(run_dast_scan_workflow, target)
+    return {"status": "started", "message": f"Autonomous DAST scan launched against {target}", "target_url": target}
+
+@app.get("/api/logs/stream")
+async def stream_logs():
+    async def event_generator():
+        last_index = 0
+        for _ in range(300):
+            current = LOG_BUFFER[last_index:]
+            for entry in current:
+                yield f"data: {json.dumps(entry)}\n\n"
+                last_index += 1
+            if not SCAN_STATE["is_running"] and last_index >= len(LOG_BUFFER) and last_index > 0:
+                yield f"data: {json.dumps({'agent': 'STREAM', 'event': 'EOF', 'message': 'Stream closed.'})}\n\n"
+                break
+            await asyncio.sleep(0.3)
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 # ----------------- RECON ENDPOINT MANAGEMENT ROUTES -----------------
 
@@ -462,8 +507,7 @@ def on_deploy_webhook(payload: DeployWebhookPayload):
     executor = ExploitExecutor(
         base_url=TARGET_APP_URL,
         safety_guard=global_safety_guard
-    )
-    verifier = VerifierAgent()
+    )    verifier = VerifierAgent()
 
     new_findings = []
 
