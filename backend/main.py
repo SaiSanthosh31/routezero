@@ -507,7 +507,8 @@ def on_deploy_webhook(payload: DeployWebhookPayload):
     executor = ExploitExecutor(
         base_url=TARGET_APP_URL,
         safety_guard=global_safety_guard
-    )    verifier = VerifierAgent()
+    )
+    verifier = VerifierAgent()
 
     new_findings = []
 
